@@ -1,7 +1,8 @@
 import express from "express";
 import cors from "cors";
 import config from "./config/config";
-import { db } from "./db/db";
+import productsRoutes from "./routes/products.routes";
+import ordersRoutes from "./routes/orders.routes";
 
 const app = express();
 
@@ -18,14 +19,5 @@ app.listen(config.PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${config.PORT}`);
 });
 
-app.get("/", async (req, res) => {
-  try {
-    const [rows] = await db.query(
-      "SELECT producto.nombre FROM producto JOIN categoria ON categoria.id = producto.categoria_id WHERE categoria.nombre = 'tortilla'"
-    );
-    res.json(rows);
-  } catch (error) {
-    console.error("Error al consultar productos:", error);
-    res.status(500).json({ error: "Error interno del servidor" });
-  }
-});
+app.use("/api/products", productsRoutes);
+app.use("/api/orders", ordersRoutes);
