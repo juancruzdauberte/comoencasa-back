@@ -3,6 +3,7 @@ import cors from "cors";
 import config from "./config/config";
 import productsRoutes from "./routes/products.routes";
 import ordersRoutes from "./routes/orders.routes";
+import { errorHandler } from "./middlewares/errorHandler";
 
 const app = express();
 
@@ -21,3 +22,5 @@ app.listen(config.PORT, () => {
 
 app.use("/api/products", productsRoutes);
 app.use("/api/orders", ordersRoutes);
+
+app.use(errorHandler);

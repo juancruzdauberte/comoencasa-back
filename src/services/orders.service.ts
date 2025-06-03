@@ -1,13 +1,36 @@
 import { db } from "../db/db";
 import { ResultSetHeader } from "../../node_modules/mysql2/promise";
-import { CompleteOrderDetail } from "../types/types";
+import {
+  CompleteOrderDetail,
+  Customer,
+  CustomerQuery,
+  GetAllOrders,
+  GetOrderId,
+  GetProductId,
+  OrderDetail,
+  PayOrder,
+  UpdateOrder,
+} from "../types/types";
+import { BadRequestError, NotFoundError } from "../errors/errors";
 
 export class OrderService {
   static async getOrders() {
     const conn = await db.getConnection();
     try {
-      const [orders] = await conn.query("SELECT * FROM pedido");
-      return orders;
+      const [orders] = await conn.query<GetAllOrders[]>(
+        `SELECT
+        p.id, 
+        p.horaEntrega, 
+        p.domicilio, 
+        c.nombre, 
+        c.apellido, 
+        pc.monto,
+        pc.fechaPago 
+      FROM pedido AS p
+      INNER JOIN cliente AS c ON c.id = p.cliente_id 
+      LEFT JOIN pagocliente AS pc ON pc.pedido_id = p.id`
+      );
+      return { orders };
     } catch (error) {
       console.error(error);
       await conn.rollback();
@@ -20,15 +43,33 @@ export class OrderService {
     products: { productId: number; quantity: number }[],
     address: string,
     deliveryTime: string,
-    clientId: number
+    observation: string,
+    client: Customer
   ) {
     const conn = await db.getConnection();
-    await conn.beginTransaction();
 
     try {
+      await conn.beginTransaction();
+
+      const [clientResult] = await conn.query<CustomerQuery[]>(
+        "SELECT id FROM cliente WHERE telefono = ?",
+        [client.telefono]
+      );
+
+      let clientId: number;
+      if (clientResult.length > 0) {
+        clientId = clientResult[0].id;
+      } else {
+        const [newClient] = await conn.query<ResultSetHeader>(
+          "INSERT INTO cliente (nombre, apellido, telefono) VALUES (?, ?, ?)",
+          [client.nombre, client.apellido, client.telefono]
+        );
+        clientId = newClient.insertId;
+      }
+
       const [order] = await conn.query<ResultSetHeader>(
-        "INSERT INTO pedido (fecha, domicilio, horaEntrega, estado, cliente_id) VALUES(NOW(), ?, ?, 'pendiente', ?)",
-        [address, deliveryTime, clientId]
+        "INSERT INTO pedido (fecha, domicilio, horaEntrega, estado, cliente_id, observacion) VALUES(NOW(), ?, ?, 'pendiente', ?, ?)",
+        [address, deliveryTime, clientId, observation]
       );
 
       const orderId = order.insertId;
@@ -40,9 +81,11 @@ export class OrderService {
         );
       }
       await conn.commit();
+      return orderId;
     } catch (error) {
       await conn.rollback();
       console.error(error);
+      throw error;
     } finally {
       conn.release();
     }
@@ -54,17 +97,55 @@ export class OrderService {
     quantity: number
   ) {
     const conn = await db.getConnection();
-    await conn.beginTransaction();
 
     try {
-      await conn.query(
-        `INSERT INTO pedidodetalle (pedido_id, producto_id, cantidad) VALUES (?, ?, ?)`,
-        [orderId, productId, quantity]
+      await conn.beginTransaction();
+
+      if (!Number.isInteger(quantity) || quantity <= 0) {
+        throw new BadRequestError(
+          "La cantidad debe ser un número mayor a cero."
+        );
+      }
+
+      const [pedido] = await conn.query<GetOrderId[]>(
+        `SELECT id FROM pedido WHERE id = ?`,
+        [orderId]
       );
+      if (pedido.length === 0) {
+        throw new NotFoundError("El pedido no existe.");
+      }
+
+      const [producto] = await conn.query<GetProductId[]>(
+        `SELECT id FROM producto WHERE id = ?`,
+        [productId]
+      );
+      if (producto.length === 0) {
+        throw new NotFoundError("El producto no existe.");
+      }
+
+      const [rows] = await conn.query<OrderDetail[]>(
+        `SELECT cantidad FROM pedidodetalle WHERE pedido_id = ? AND producto_id = ?`,
+        [orderId, productId]
+      );
+
+      if (rows.length > 0) {
+        const newQuantity = rows[0].cantidad + quantity;
+        await conn.query(
+          `UPDATE pedidodetalle SET cantidad = ? WHERE pedido_id = ? AND producto_id = ?`,
+          [newQuantity, orderId, productId]
+        );
+      } else {
+        await conn.query(
+          `INSERT INTO pedidodetalle (pedido_id, producto_id, cantidad) VALUES (?, ?, ?)`,
+          [orderId, productId, quantity]
+        );
+      }
+
       await conn.commit();
     } catch (error) {
       await conn.rollback();
       console.error(error);
+      throw error;
     } finally {
       conn.release();
     }
@@ -75,70 +156,220 @@ export class OrderService {
     try {
       const [rows] = await conn.query<CompleteOrderDetail[]>(
         `SELECT 
-    producto.nombre,
-    pedidodetalle.cantidad,
-    pedido.estado,
-    pagocliente.metodoPago,
-    pedido.domicilio,
-    pedido.horaEntrega,
-    pedido.fecha,
-    pedido.observacion,
-    pagocliente.fechaPago,
-    pagocliente.monto,
-    categoria.nombre AS categoria,
-    cliente.nombre AS clienteNombre,
-    cliente.apellido AS clienteApellido,
-    cliente.telefono AS clienteTelefono
-  FROM pedidodetalle
-  INNER JOIN producto ON producto.id = pedidodetalle.producto_id
-  INNER JOIN pedido ON pedido.id = pedidodetalle.pedido_id
-  INNER JOIN categoria ON categoria.id = producto.categoria_id
-  INNER JOIN cliente ON cliente.id = pedido.cliente_id
-  LEFT JOIN pagocliente ON pagocliente.pedido_id = pedido.id
-  WHERE pedidodetalle.pedido_id = ?`,
+  pr.nombre as productName,
+  pd.cantidad,
+  o.estado,
+  o.domicilio,
+  o.horaEntrega,
+  o.fecha,
+  o.observacion,
+  pg.fechaPago,
+  pg.metodoPago,
+  pg.monto,
+  cat.nombre AS categoria,
+  cus.nombre AS clienteNombre,
+  cus.apellido AS clienteApellido,
+  cus.telefono AS clienteTelefono
+FROM pedidodetalle AS pd
+INNER JOIN producto AS pr ON pr.id = pd.producto_id
+INNER JOIN pedido AS o ON o.id = pd.pedido_id
+INNER JOIN categoria AS cat ON cat.id = pr.categoria_id
+INNER JOIN cliente AS cus ON cus.id = o.cliente_id
+LEFT JOIN pagocliente AS pg ON pg.pedido_id = o.id
+WHERE pd.pedido_id = ?`,
         [orderId]
       );
       return {
-        domicilio: rows[0].domicilio,
-        metodoPago: rows[0].metodoPago,
-        horaEntrega: rows[0].horaEntrega,
-        monto: rows[0].monto,
-        fechaPago: rows[0].fechaPago,
-        fecha: rows[0].fecha,
-        observacion: rows[0].observacion,
-        cliente: {
-          nombre: rows[0].clienteNombre,
-          apellido: rows[0].clienteApellido,
-          telefono: rows[0].clienteTelefono,
+        pedido: {
+          domicilio: rows[0].domicilio,
+          horaEntrega: rows[0].horaEntrega,
+          monto: rows[0].monto,
+          fechaPago: rows[0].fechaPago,
+          metodoPago: rows[0].metodoPago,
+          fecha: rows[0].fecha,
+          observacion: rows[0].observacion,
+          cliente: {
+            nombre: rows[0].clienteNombre,
+            apellido: rows[0].clienteApellido,
+            telefono: rows[0].clienteTelefono,
+          },
+          productos: rows.map((row) => ({
+            nombre: row.productName,
+            categoria: row.categoria,
+            cantidad: row.cantidad,
+          })),
         },
-        productos: rows.map((row) => ({
-          nombre: row.nombre,
-          categoria: row.categoria,
-          cantidad: row.cantidad,
-        })),
       };
     } catch (error) {
       await conn.rollback();
       console.log(error);
+      throw error;
     } finally {
       conn.release();
     }
   }
 
-  static async payOrder(pedidoId: number, metodoPago: string, monto: number) {
+  static async payOrder(
+    orderId: number,
+    paymentMethod: string,
+    amount: number
+  ) {
     const conn = await db.getConnection();
     await conn.beginTransaction();
     try {
-      const [result] = await conn.query(
+      const [order] = await conn.query<GetOrderId[]>(
+        "SELECT id FROM pedido WHERE id = ?",
+        [orderId]
+      );
+
+      if (order.length === 0) {
+        throw new NotFoundError("El pedido con dicho id no existe");
+      }
+
+      const [existingPayment] = await conn.query<PayOrder[]>(
+        "SELECT * FROM pagocliente WHERE pedido_id = ?",
+        [orderId]
+      );
+
+      if (existingPayment.length > 0) {
+        throw new BadRequestError("El pedido ya está pago");
+      }
+      const [res] = await conn.query<PayOrder[]>(
         `INSERT INTO pagocliente (pedido_id, metodoPago, monto, fechaPago)
        VALUES (?, ?, ?, NOW())`,
-        [pedidoId, metodoPago, monto]
+        [orderId, paymentMethod, amount]
       );
+      if (res[0].fechaPago !== null) {
+        throw new BadRequestError("El pedido ya esta pago");
+      }
       await conn.commit();
-      return result;
+      return res;
     } catch (error) {
       await conn.rollback();
       console.error(error);
+      throw error;
+    } finally {
+      conn.release();
+    }
+  }
+
+  static async deleteProductFromOrder(orderId: number, productId: number) {
+    const conn = await db.getConnection();
+
+    try {
+      await conn.beginTransaction();
+      const [result] = await conn.query<ResultSetHeader>(
+        `DELETE FROM pedidodetalle WHERE pedido_id = ? AND producto_id = ?`,
+        [orderId, productId]
+      );
+
+      if (result.affectedRows === 0) {
+        throw new NotFoundError("Error al eliminar el producto en el pedido");
+      }
+      await conn.commit();
+      return result.affectedRows;
+    } catch (error) {
+      console.error(error);
+      await conn.rollback();
+      throw error;
+    } finally {
+      conn.release();
+    }
+  }
+
+  static async updateProductQuantity(
+    orderId: number,
+    productId: number,
+    quantity: number
+  ) {
+    const conn = await db.getConnection();
+
+    try {
+      await conn.beginTransaction();
+      const [detail] = await conn.query<OrderDetail[]>(
+        `
+        SELECT pd.*
+        FROM pedidodetalle pd
+        JOIN pedido p ON pd.pedido_id = p.id
+        JOIN producto pr ON pd.producto_id = pr.id
+        WHERE pd.pedido_id = ? AND pd.producto_id = ?
+        `,
+        [orderId, productId]
+      );
+
+      if (detail.length === 0) {
+        throw new NotFoundError(
+          "El pedido o el producto en el pedido no existe"
+        );
+      }
+      const [result] = await conn.query<ResultSetHeader>(
+        "UPDATE pedidodetalle SET cantidad = ? WHERE pedido_id = ? AND producto_id = ?",
+        [quantity, orderId, productId]
+      );
+
+      await conn.commit();
+      return result.affectedRows;
+    } catch (error) {
+      await conn.rollback();
+      console.error(error);
+      throw error;
+    } finally {
+      conn.release();
+    }
+  }
+
+  static async updateOrder(orderId: string, data: UpdateOrder) {
+    const conn = await db.getConnection();
+    const {
+      pedido: { domicilio, horaEntrega, observacion },
+      pagoCliente: { fechaPago, metodoPago },
+    } = data;
+    try {
+      await conn.beginTransaction();
+      const [resOrder] = await conn.query<ResultSetHeader>(
+        "UPDATE pedido SET horaEntrega = ? , domicilio = ?, observacion = ? WHERE id = ?",
+        [horaEntrega, domicilio, observacion, orderId]
+      );
+
+      const [resCustomerPay] = await conn.query<ResultSetHeader>(
+        "UPDATE pagocliente SET fechaPago = ?, metodoPago = ? WHERE pedido_id = ?",
+        [fechaPago, metodoPago, orderId]
+      );
+
+      if (resOrder.affectedRows === 0) {
+        throw new NotFoundError("Pedido no encontrado");
+      }
+
+      if (resCustomerPay.affectedRows === 0) {
+        throw new NotFoundError("Pago del cliente no encontrado");
+      }
+      await conn.commit();
+    } catch (error) {
+      await conn.rollback();
+      console.error(error);
+      throw error;
+    } finally {
+      conn.release();
+    }
+  }
+
+  static async deleteOrder(orderId: number) {
+    const conn = await db.getConnection();
+
+    try {
+      await conn.beginTransaction();
+      const [result] = await conn.query<ResultSetHeader>(
+        "DELETE FROM pedido WHERE id = ?",
+        [orderId]
+      );
+      if (result.affectedRows === 0) {
+        throw new NotFoundError("El pedido no existe");
+      }
+      await conn.commit();
+    } catch (error) {
+      await conn.rollback();
+      console.error(error);
+      throw error;
     } finally {
       conn.release();
     }

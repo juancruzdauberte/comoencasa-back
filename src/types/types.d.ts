@@ -1,41 +1,7 @@
 import { RowDataPacket } from "../../node_modules/mysql2/promise";
 
-export type Category = {
-  id?: number;
-  name: string;
-};
-
-export type Product = {
-  id?: number;
-  name: string;
-  price: number;
-  category: number;
-};
-
-export type Customer = {
-  id?: number;
-  name: string;
-  surname: string;
-  phone: string;
-  address: string;
-};
-
-export type Order = {
-  id?: number;
-  address: string;
-  state: string;
-  customer: number;
-};
-
-export type Supplier = {
-  id?: number;
-  name: string;
-  phone: string;
-  address: string;
-};
-
 export type CompleteOrderDetail = {
-  nombre: string;
+  productName: string;
   cantidad: number;
   estado: string;
   metodoPago: string | null;
@@ -50,3 +16,59 @@ export type CompleteOrderDetail = {
   categoria: string;
   observacion: string | null;
 } & RowDataPacket;
+
+export type GetAllOrders = {
+  id: number;
+  nombreCliente: string;
+  apellidoCliente: string;
+  monto: number;
+  fechaPago: Date | null;
+  domicilio: string;
+  horaEntrega: string | null;
+} & RowDataPacket;
+
+export type UpdateOrder = {
+  pedido: {
+    horaEntrega: string | null;
+    domicilio: string;
+    observacion: string | null;
+  };
+  pagoCliente: {
+    fechaPago: Date | null;
+    metodoPago: string;
+  };
+};
+
+export type OrderDetail = {
+  producto_id: number;
+  cantidad: number;
+  pedido_id: number;
+} & RowDataPacket;
+
+export type GetOrderId = {
+  id: string;
+} & RowDataPacket;
+
+export type PayOrder = {
+  pedido_id: number;
+  metodoPago: string;
+  monto: number;
+  fechaPago: Date | null;
+} & RowDataPacket;
+
+export type GetProductId = {
+  id: string;
+} & RowDataPacket;
+
+export type Customer = {
+  id: number;
+  nombre: string;
+  apellido: string;
+  telefono: string;
+};
+
+export type CustomerQuery = Customer & RowDataPacket;
+
+export interface CustomError extends Error {
+  statusCode?: number;
+}
