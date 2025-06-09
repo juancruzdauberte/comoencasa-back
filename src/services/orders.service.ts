@@ -317,16 +317,13 @@ WHERE pd.pedido_id = ?`,
       if (existingPayment.length > 0) {
         throw new BadRequestError("El pedido ya está pago");
       }
-      const [res] = await conn.query<PayOrder[]>(
+      await conn.query<PayOrder[]>(
         `INSERT INTO pagocliente (pedido_id, metodoPago, monto, fechaPago)
        VALUES (?, ?, ?, NOW())`,
         [orderId, paymentMethod, amount]
       );
-      if (res[0].fechaPago !== null) {
-        throw new BadRequestError("El pedido ya esta pago");
-      }
+
       await conn.commit();
-      return res;
     } catch (error) {
       await conn.rollback();
       console.error(error);
