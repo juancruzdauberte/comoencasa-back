@@ -248,7 +248,6 @@ GROUP BY p.id, p.horaEntrega, p.domicilio, c.nombre, c.apellido, pc.monto, pc.fe
   o.horaEntrega,
   o.fecha,
   o.observacion,
-  o.entregado,
   pg.fechaPago,
   pg.metodoPago,
   pg.monto,
