@@ -1,12 +1,29 @@
 import { NextFunction, Request, Response } from "express";
 import { OrderService } from "../services/orders.service";
 
-export async function getOrders(req: Request, res: Response) {
+export async function getOrders(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   try {
     const orders = await OrderService.getOrders();
     res.status(200).json(orders);
   } catch (error) {
-    res.status(500).json({ message: "Error al obtener los pedidos", error });
+    next(error);
+  }
+}
+
+export async function getOrdersToday(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const orders = await OrderService.getOrdersToday();
+    res.status(200).json(orders);
+  } catch (error) {
+    next(error);
   }
 }
 
@@ -159,6 +176,24 @@ export async function deleteOrder(
 
     await OrderService.deleteOrder(parseInt(oid));
     res.status(200).json({ message: "Pedido eliminado correctamente" });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function orderDelivered(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id } = req.body;
+    if (!id) {
+      res.status(400).json({ message: "Error no existe un pedido con ese ID" });
+      return;
+    }
+    await OrderService.orderDelivered(id);
+    res.status(200).json({ message: "Pedido entregado exitosamente" });
   } catch (error) {
     next(error);
   }

@@ -19,18 +19,103 @@ export class OrderService {
     try {
       const [orders] = await conn.query<GetAllOrders[]>(
         `SELECT
-        p.id, 
-        p.horaEntrega, 
-        p.domicilio, 
-        c.nombre, 
-        c.apellido, 
-        pc.monto,
-        pc.fechaPago 
-      FROM pedido AS p
-      INNER JOIN cliente AS c ON c.id = p.cliente_id 
-      LEFT JOIN pagocliente AS pc ON pc.pedido_id = p.id`
+  p.id,
+  p.horaEntrega,
+  p.domicilio,
+  p.estado,
+  p.entregado,
+  p.observacion,
+  c.nombre AS nombreCliente,
+  c.apellido AS apellidoCliente,
+  pc.monto,
+  pc.fechaPago,
+  JSON_OBJECTAGG(
+    IFNULL(productosAgrupados.categoria, 'Sin categoría'),
+    productosAgrupados.productos
+  ) AS productos
+FROM pedido AS p
+INNER JOIN cliente AS c ON c.id = p.cliente_id
+LEFT JOIN pagocliente AS pc ON pc.pedido_id = p.id
+LEFT JOIN (
+  SELECT
+    pd.pedido_id,
+    cat.nombre AS categoria,
+    JSON_ARRAYAGG(
+      JSON_OBJECT(
+        'nombre', pr.nombre,
+        'cantidad', pd.cantidad
+      )
+    ) AS productos
+  FROM pedidodetalle AS pd
+  INNER JOIN producto AS pr ON pr.id = pd.producto_id
+  LEFT JOIN categoria AS cat ON cat.id = pr.categoria_id
+  GROUP BY pd.pedido_id, cat.nombre
+) AS productosAgrupados ON productosAgrupados.pedido_id = p.id
+
+GROUP BY p.id, p.horaEntrega, p.domicilio, c.nombre, c.apellido, pc.monto, pc.fechaPago;
+`
       );
-      return { orders };
+
+      if (orders.length === 0) {
+        throw new BadRequestError("Error al obtener todos los pedidos");
+      }
+      return { pedidos: orders };
+    } catch (error) {
+      console.error(error);
+      await conn.rollback();
+    } finally {
+      conn.release();
+    }
+  }
+
+  static async getOrdersToday() {
+    const conn = await db.getConnection();
+    try {
+      const [orders] = await conn.query<GetAllOrders[]>(
+        `SELECT
+  p.id,
+  p.horaEntrega,
+  p.domicilio,
+  p.entregado,
+  p.estado,
+  p.observacion,
+  c.nombre AS nombreCliente,
+  c.apellido AS apellidoCliente,
+  pc.monto,
+  pc.fechaPago,
+  JSON_OBJECTAGG(
+    IFNULL(productosAgrupados.categoria, 'Sin categoría'),
+    productosAgrupados.productos
+  ) AS productos
+FROM pedido AS p
+INNER JOIN cliente AS c ON c.id = p.cliente_id
+LEFT JOIN pagocliente AS pc ON pc.pedido_id = p.id
+LEFT JOIN (
+  SELECT
+    pd.pedido_id,
+    cat.nombre AS categoria,
+    JSON_ARRAYAGG(
+      JSON_OBJECT(
+        'nombre', pr.nombre,
+        'cantidad', pd.cantidad
+      )
+    ) AS productos
+  FROM pedidodetalle AS pd
+  INNER JOIN producto AS pr ON pr.id = pd.producto_id
+  LEFT JOIN categoria AS cat ON cat.id = pr.categoria_id
+  GROUP BY pd.pedido_id, cat.nombre
+) AS productosAgrupados ON productosAgrupados.pedido_id = p.id
+
+WHERE DATE(p.fecha) = CURDATE() AND p.estado IN ('preparando', 'listo')
+
+GROUP BY p.id, p.horaEntrega, p.domicilio, c.nombre, c.apellido, pc.monto, pc.fechaPago;
+`
+      );
+
+      if (orders.length === 0) {
+        throw new BadRequestError("Error al obtener todos los pedidos");
+      }
+      return { pedidos: orders };
     } catch (error) {
       console.error(error);
       await conn.rollback();
@@ -163,6 +248,7 @@ export class OrderService {
   o.horaEntrega,
   o.fecha,
   o.observacion,
+  o.entregado,
   pg.fechaPago,
   pg.metodoPago,
   pg.monto,
@@ -370,6 +456,26 @@ WHERE pd.pedido_id = ?`,
       await conn.rollback();
       console.error(error);
       throw error;
+    } finally {
+      conn.release();
+    }
+  }
+
+  static async orderDelivered(orderId: number) {
+    const conn = await db.getConnection();
+    try {
+      await conn.beginTransaction();
+      const [res] = await conn.query<ResultSetHeader>(
+        "UPDATE pedido SET entregado = 1 WHERE id = ?",
+        [orderId]
+      );
+      if (res.affectedRows === 0) {
+        throw new BadRequestError("Error al dar como entregado el pedido");
+      }
+      await conn.commit();
+      return res;
+    } catch (error) {
+      await conn.rollback();
     } finally {
       conn.release();
     }

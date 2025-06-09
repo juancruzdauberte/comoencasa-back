@@ -3,7 +3,7 @@ import { RowDataPacket } from "../../node_modules/mysql2/promise";
 export type CompleteOrderDetail = {
   productName: string;
   cantidad: number;
-  estado: string;
+  estado: State;
   metodoPago: string | null;
   domicilio: string;
   horaEntrega: string | null;
@@ -17,14 +17,24 @@ export type CompleteOrderDetail = {
   observacion: string | null;
 } & RowDataPacket;
 
+export type Product = {
+  nombre: string;
+  cantidad: number;
+};
+type State = "pendiente" | "entregado" | "listo" | "cancelado";
 export type GetAllOrders = {
   id: number;
   nombreCliente: string;
   apellidoCliente: string;
   monto: number;
   fechaPago: Date | null;
+  observacion: string;
   domicilio: string;
+  estado: State;
   horaEntrega: string | null;
+  productos: {
+    [categoria: string]: Product[];
+  };
 } & RowDataPacket;
 
 export type UpdateOrder = {
@@ -67,6 +77,12 @@ export type Customer = {
   telefono: string;
 };
 
+export type UserRole = "admin" | "client" | "none";
+
+export type Payload = {
+  email: string;
+  role: string;
+};
 export type CustomerQuery = Customer & RowDataPacket;
 
 export interface CustomError extends Error {
