@@ -23,7 +23,6 @@ export class OrderService {
   p.horaEntrega,
   p.domicilio,
   p.estado,
-  p.entregado,
   p.observacion,
   c.nombre AS nombreCliente,
   c.apellido AS apellidoCliente,
@@ -76,7 +75,6 @@ GROUP BY p.id, p.horaEntrega, p.domicilio, c.nombre, c.apellido, pc.monto, pc.fe
   p.id,
   p.horaEntrega,
   p.domicilio,
-  p.entregado,
   p.estado,
   p.observacion,
   c.nombre AS nombreCliente,
@@ -455,26 +453,6 @@ WHERE pd.pedido_id = ?`,
       await conn.rollback();
       console.error(error);
       throw error;
-    } finally {
-      conn.release();
-    }
-  }
-
-  static async orderDelivered(orderId: number) {
-    const conn = await db.getConnection();
-    try {
-      await conn.beginTransaction();
-      const [res] = await conn.query<ResultSetHeader>(
-        "UPDATE pedido SET entregado = 1 WHERE id = ?",
-        [orderId]
-      );
-      if (res.affectedRows === 0) {
-        throw new BadRequestError("Error al dar como entregado el pedido");
-      }
-      await conn.commit();
-      return res;
-    } catch (error) {
-      await conn.rollback();
     } finally {
       conn.release();
     }

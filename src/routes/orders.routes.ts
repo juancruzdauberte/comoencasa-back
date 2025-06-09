@@ -9,7 +9,6 @@ import {
   updateProductQuantity,
   updateOrder,
   deleteOrder,
-  orderDelivered,
   getOrdersToday,
 } from "../controllers/orders.controller";
 import { addProductSchema } from "../middlewares/order/addProductToOrderSchema";
@@ -28,5 +27,4 @@ router.delete("/:oid/product/:pid", deleteProductFromOrder);
 router.delete("/:oid", deleteOrder);
 router.patch("/:oid/product/:pid", updateProductQuantity);
 router.put("/:oid", updateOrder);
-router.patch("/delivered", orderDelivered);
 export default router;

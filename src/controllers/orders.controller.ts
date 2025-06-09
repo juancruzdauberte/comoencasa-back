@@ -180,21 +180,3 @@ export async function deleteOrder(
     next(error);
   }
 }
-
-export async function orderDelivered(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
-  try {
-    const { id } = req.body;
-    if (!id) {
-      res.status(400).json({ message: "Error no existe un pedido con ese ID" });
-      return;
-    }
-    await OrderService.orderDelivered(id);
-    res.status(200).json({ message: "Pedido entregado exitosamente" });
-  } catch (error) {
-    next(error);
-  }
-}
