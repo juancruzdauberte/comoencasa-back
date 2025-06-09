@@ -21,7 +21,7 @@ export function googleCallback(
       httpOnly: true,
       secure: true,
       maxAge: 1000 * 60 * 60 * 24 * 3,
-      sameSite: "lax",
+      sameSite: "none",
       path: "/",
     });
 
@@ -43,7 +43,7 @@ export async function logOut(req: Request, res: Response, next: NextFunction) {
     res.clearCookie("token", {
       httpOnly: true,
       secure: true,
-      sameSite: "lax",
+      sameSite: "none",
     });
     res.redirect(`${config.CLIENT_URL}/login`);
   } catch (error) {
