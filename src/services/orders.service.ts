@@ -153,7 +153,7 @@ GROUP BY p.id, p.horaEntrega, p.domicilio, c.nombre, c.apellido, pc.monto, pc.fe
       }
 
       const [order] = await conn.query<ResultSetHeader>(
-        "INSERT INTO pedido (fecha, domicilio, horaEntrega, estado, cliente_id, observacion) VALUES(NOW(), ?, ?, 'pendiente', ?, ?)",
+        "INSERT INTO pedido (fecha, domicilio, horaEntrega, estado, cliente_id, observacion) VALUES(NOW(), ?, ?, 'preparando', ?, ?)",
         [address, deliveryTime, clientId, observation]
       );
 
