@@ -133,7 +133,8 @@ GROUP BY p.id, p.horaEntrega, p.domicilio, c.nombre, c.apellido, pc.monto, pc.fe
 
     try {
       await conn.beginTransaction();
-
+      const horaEntregaFormateada =
+        deliveryTime?.trim() === "" ? "00:00:00" : deliveryTime;
       const [clientResult] = await conn.query<CustomerQuery[]>(
         "SELECT id FROM cliente WHERE telefono = ?",
         [client.telefono]
@@ -152,7 +153,7 @@ GROUP BY p.id, p.horaEntrega, p.domicilio, c.nombre, c.apellido, pc.monto, pc.fe
 
       const [order] = await conn.query<ResultSetHeader>(
         "INSERT INTO pedido (fecha, domicilio, horaEntrega, estado, cliente_id, observacion) VALUES(NOW(), ?, ?, 'preparando', ?, ?)",
-        [address, deliveryTime, clientId, observation]
+        [address, horaEntregaFormateada, clientId, observation]
       );
 
       const orderId = order.insertId;

@@ -147,7 +147,6 @@ export async function updateOrder(
   next: NextFunction
 ) {
   const { oid } = req.params;
-  console.log("REQ.BODY", req.body);
   const { pedido } = req.body;
 
   try {
