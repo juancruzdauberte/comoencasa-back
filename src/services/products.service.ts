@@ -18,7 +18,7 @@ export class ProductService {
     const conn = await db.getConnection();
     try {
       const [rows] = await conn.query(
-        "SELECT producto.id, producto.nombre FROM producto INNER JOIN categoria ON categoria.id = producto.categoria_id WHERE categoria.nombre = ? ",
+        "SELECT producto.id, producto.nombre FROM producto INNER JOIN categoria ON categoria.id = producto.categoria_id WHERE categoria.id = ? ",
         [category]
       );
       return rows;

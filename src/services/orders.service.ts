@@ -398,17 +398,17 @@ WHERE pd.pedido_id = ?`,
     }
   }
 
-  static async updateOrder(orderId: string, data: UpdateOrder) {
+  static async updateOrder(orderId: string, pedido: UpdateOrder) {
     const conn = await db.getConnection();
-    const {
-      pedido: { domicilio, horaEntrega, observacion },
-      pagoCliente: { fechaPago, metodoPago },
-    } = data;
+    const { domicilio, horaEntrega, observacion, fechaPago, metodoPago } =
+      pedido;
     try {
       await conn.beginTransaction();
+      const horaEntregaFormateada =
+        horaEntrega?.trim() === "" ? "00:00:00" : horaEntrega;
       const [resOrder] = await conn.query<ResultSetHeader>(
         "UPDATE pedido SET horaEntrega = ? , domicilio = ?, observacion = ? WHERE id = ?",
-        [horaEntrega, domicilio, observacion, orderId]
+        [horaEntregaFormateada, domicilio, observacion, orderId]
       );
 
       const [resCustomerPay] = await conn.query<ResultSetHeader>(

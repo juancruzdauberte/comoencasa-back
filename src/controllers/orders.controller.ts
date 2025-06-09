@@ -46,7 +46,7 @@ export async function getOrderDetail(req: Request, res: Response) {
 
 export async function createOrder(req: Request, res: Response) {
   try {
-    const { productos, direccion, horaEntrega, cliente, observacion } =
+    const { productos, domicilio, horaEntrega, cliente, observacion } =
       req.body;
     const products = productos.map(
       (p: { productoId: number; cantidad: number }) => ({
@@ -56,7 +56,7 @@ export async function createOrder(req: Request, res: Response) {
     );
     await OrderService.createOrder(
       products,
-      direccion,
+      domicilio,
       horaEntrega,
       observacion,
       cliente
@@ -147,15 +147,17 @@ export async function updateOrder(
   next: NextFunction
 ) {
   const { oid } = req.params;
-  const data = req.body;
+  console.log("REQ.BODY", req.body);
+  const { pedido } = req.body;
+
   try {
-    if (!data?.pedido || !data?.pagoCliente) {
+    if (!pedido) {
       res
         .status(400)
         .json({ message: "Datos incompletos para actualizar el pedido." });
       return;
     }
-    await OrderService.updateOrder(oid, data);
+    await OrderService.updateOrder(oid, pedido);
     res.status(200).json({ message: "Pedido actualizado correctamente" });
   } catch (error) {
     next(error);

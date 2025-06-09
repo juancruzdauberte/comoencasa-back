@@ -1,10 +1,12 @@
 import { RowDataPacket } from "../../node_modules/mysql2/promise";
 
+type State = "pendiente" | "entregado" | "listo" | "cancelado";
+type PayMethod = "transferencia" | "efectivo" | null;
 export type CompleteOrderDetail = {
   productName: string;
   cantidad: number;
   estado: State;
-  metodoPago: string | null;
+  metodoPago: PayMethod;
   domicilio: string;
   horaEntrega: string | null;
   fecha: Date;
@@ -21,7 +23,6 @@ export type Product = {
   nombre: string;
   cantidad: number;
 };
-type State = "pendiente" | "entregado" | "listo" | "cancelado";
 export type GetAllOrders = {
   id: number;
   nombreCliente: string;
@@ -38,15 +39,11 @@ export type GetAllOrders = {
 } & RowDataPacket;
 
 export type UpdateOrder = {
-  pedido: {
-    horaEntrega: string | null;
-    domicilio: string;
-    observacion: string | null;
-  };
-  pagoCliente: {
-    fechaPago: Date | null;
-    metodoPago: string;
-  };
+  horaEntrega: string | null;
+  domicilio: string;
+  observacion: string | null;
+  fechaPago: Date | null;
+  metodoPago: PayMethod;
 };
 
 export type OrderDetail = {
@@ -61,7 +58,7 @@ export type GetOrderId = {
 
 export type PayOrder = {
   pedido_id: number;
-  metodoPago: string;
+  metodoPago: PayMethod;
   monto: number;
   fechaPago: Date | null;
 } & RowDataPacket;

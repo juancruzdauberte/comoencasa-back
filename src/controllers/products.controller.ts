@@ -20,9 +20,7 @@ export async function getProductsByCategory(req: Request, res: Response) {
     return;
   }
   try {
-    const products = await ProductService.getProductsByCategory(
-      category as string
-    );
+    const products = await ProductService.getProductsByCategory(category);
     res.status(200).json(products);
   } catch (error) {
     res
