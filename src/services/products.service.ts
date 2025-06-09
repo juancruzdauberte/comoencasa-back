@@ -4,7 +4,7 @@ export class ProductService {
   static async getProductsCategory() {
     const conn = await db.getConnection();
     try {
-      const [rows] = await db.query("SELECT * FROM categoria");
+      const [rows] = await conn.query("SELECT * FROM categoria");
       return rows;
     } catch (error) {
       console.error(error);
@@ -17,7 +17,7 @@ export class ProductService {
   static async getProductsByCategory(category: string) {
     const conn = await db.getConnection();
     try {
-      const [rows] = await db.query(
+      const [rows] = await conn.query(
         "SELECT producto.id, producto.nombre FROM producto INNER JOIN categoria ON categoria.id = producto.categoria_id WHERE categoria.nombre = ? ",
         [category]
       );
