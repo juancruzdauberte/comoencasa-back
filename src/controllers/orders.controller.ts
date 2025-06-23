@@ -72,10 +72,10 @@ export async function addProductToOrder(
   res: Response,
   next: NextFunction
 ) {
-  const { productId, orderId, quantity } = req.body;
+  const { productoId, pedidoId, cantidad } = req.body;
 
   try {
-    await OrderService.addProductToOrder(orderId, productId, quantity);
+    await OrderService.addProductToOrder(pedidoId, productoId, cantidad);
     res.status(200).json({ message: "Producto agregado al pedido con exito" });
   } catch (error) {
     next(error);
@@ -123,8 +123,8 @@ export async function updateProductQuantity(
   next: NextFunction
 ) {
   const { oid, pid } = req.params;
-  const { quantity } = req.body;
-  if (!oid || !pid || quantity === null) {
+  const { cantidad } = req.body;
+  if (!oid || !pid || cantidad === null) {
     res.status(400).json({ message: "Faltan datos requeridos." });
     return;
   }
@@ -132,7 +132,7 @@ export async function updateProductQuantity(
     await OrderService.updateProductQuantity(
       parseInt(oid),
       parseInt(pid),
-      parseInt(quantity)
+      parseInt(cantidad)
     );
 
     res.status(200).json({ message: "Cantidad actualizada correctamente" });

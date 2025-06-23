@@ -3,6 +3,7 @@ import { RowDataPacket } from "../../node_modules/mysql2/promise";
 type State = "pendiente" | "entregado" | "listo" | "cancelado";
 type PayMethod = "transferencia" | "efectivo" | null;
 export type CompleteOrderDetail = {
+  id: number;
   productName: string;
   cantidad: number;
   estado: State;
@@ -43,6 +44,7 @@ export type UpdateOrder = {
   domicilio: string;
   observacion: string | null;
   fechaPago: Date | null;
+  monto: number;
   metodoPago: PayMethod;
 };
 

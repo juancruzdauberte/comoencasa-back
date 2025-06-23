@@ -15,13 +15,30 @@ export async function getProductsCategory(req: Request, res: Response) {
 export async function getProductsByCategory(req: Request, res: Response) {
   const { category } = req.query;
 
-  if (!category || typeof category !== "string") {
-    res.status(400).json({ message: "Falta la categoría o es inválida" });
+  try {
+    let products;
+    if (!category) {
+      products = await ProductService.getAllProducts();
+    } else if (typeof category === "string") {
+      products = await ProductService.getProductsByCategory(category);
+    } else {
+      res.status(400).json({ message: "Categoría inválida" });
+      return;
+    }
+    res.status(200).json(products);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error al obtener los productos por categoria" });
     return;
   }
+}
+
+export async function getPrductById(req: Request, res: Response) {
+  const { id } = req.params;
   try {
-    const products = await ProductService.getProductsByCategory(category);
-    res.status(200).json(products);
+    const product = await ProductService.getProductById(parseInt(id));
+    res.status(200).json(product);
   } catch (error) {
     res
       .status(500)

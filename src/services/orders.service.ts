@@ -110,9 +110,6 @@ GROUP BY p.id, p.horaEntrega, p.domicilio, c.nombre, c.apellido, pc.monto, pc.fe
 `
       );
 
-      if (orders.length === 0) {
-        throw new BadRequestError("Error al obtener todos los pedidos");
-      }
       return { pedidos: orders };
     } catch (error) {
       console.error(error);
@@ -133,8 +130,7 @@ GROUP BY p.id, p.horaEntrega, p.domicilio, c.nombre, c.apellido, pc.monto, pc.fe
 
     try {
       await conn.beginTransaction();
-      const horaEntregaFormateada =
-        deliveryTime?.trim() === "" ? "00:00:00" : deliveryTime;
+
       const [clientResult] = await conn.query<CustomerQuery[]>(
         "SELECT id FROM cliente WHERE telefono = ?",
         [client.telefono]
@@ -153,7 +149,7 @@ GROUP BY p.id, p.horaEntrega, p.domicilio, c.nombre, c.apellido, pc.monto, pc.fe
 
       const [order] = await conn.query<ResultSetHeader>(
         "INSERT INTO pedido (fecha, domicilio, horaEntrega, estado, cliente_id, observacion) VALUES(NOW(), ?, ?, 'preparando', ?, ?)",
-        [address, horaEntregaFormateada, clientId, observation]
+        [address, deliveryTime, clientId, observation]
       );
 
       const orderId = order.insertId;
@@ -239,7 +235,8 @@ GROUP BY p.id, p.horaEntrega, p.domicilio, c.nombre, c.apellido, pc.monto, pc.fe
     const conn = await db.getConnection();
     try {
       const [rows] = await conn.query<CompleteOrderDetail[]>(
-        `SELECT 
+        `SELECT
+  o.id,       
   pr.nombre as productName,
   pd.cantidad,
   o.estado,
@@ -265,10 +262,12 @@ WHERE pd.pedido_id = ?`,
       );
       return {
         pedido: {
+          id: rows[0].id,
           domicilio: rows[0].domicilio,
           horaEntrega: rows[0].horaEntrega,
           monto: rows[0].monto,
           fechaPago: rows[0].fechaPago,
+          estado: rows[0].estado,
           metodoPago: rows[0].metodoPago,
           fecha: rows[0].fecha,
           observacion: rows[0].observacion,
@@ -401,20 +400,25 @@ WHERE pd.pedido_id = ?`,
 
   static async updateOrder(orderId: string, pedido: UpdateOrder) {
     const conn = await db.getConnection();
-    const { domicilio, horaEntrega, observacion, fechaPago, metodoPago } =
-      pedido;
+    const {
+      domicilio,
+      horaEntrega,
+      observacion,
+      monto,
+      fechaPago,
+      metodoPago,
+    } = pedido;
     try {
       await conn.beginTransaction();
-      const horaEntregaFormateada =
-        horaEntrega?.trim() === "" ? "00:00:00" : horaEntrega;
+
       const [resOrder] = await conn.query<ResultSetHeader>(
         "UPDATE pedido SET horaEntrega = ? , domicilio = ?, observacion = ? WHERE id = ?",
-        [horaEntregaFormateada, domicilio, observacion, orderId]
+        [horaEntrega, domicilio, observacion, orderId]
       );
 
       const [resCustomerPay] = await conn.query<ResultSetHeader>(
-        "UPDATE pagocliente SET fechaPago = ?, metodoPago = ? WHERE pedido_id = ?",
-        [fechaPago, metodoPago, orderId]
+        "UPDATE pagocliente SET fechaPago = ?, metodoPago = ? , monto = ? WHERE pedido_id = ?",
+        [fechaPago, metodoPago, monto, orderId]
       );
 
       if (resOrder.affectedRows === 0) {
