@@ -1,8 +1,8 @@
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import config from "./config";
-import { Payload, UserRole } from "../types/types";
-import { generateAccessToken } from "../utils/utils";
+import { generateAccessToken, generateRefreshToken } from "../utils/utils";
+import UserService from "../services/user.service";
 
 export function configurePassport() {
   passport.use(
@@ -14,34 +14,23 @@ export function configurePassport() {
       },
       async (_accesToken, _refreshToken, profile, done) => {
         try {
-          const email = profile.emails?.[0].value;
-          if (!email) {
-            return done(null, false, {
-              message: "No se pudo obtener el correo",
-            });
-          }
-          let role: UserRole = "none";
+          const authenticateEmail = profile.emails?.[0].value;
+          const avatar = profile.photos?.[0]?.value ?? "";
 
-          if (config.ADMIN_EMAIL === email) {
-            role = "admin";
-          } else if (config.CLIENT_EMAIL === email) {
-            role = "client";
+          if (!authenticateEmail) return done(null, false);
+          const user = await UserService.getUser(authenticateEmail);
+          if (!user) {
+            return done(null, false);
           }
 
-          if (role === "none") {
-            return done(null, false, { message: "Correo no autorizado" });
-          }
+          const { rol, email } = user;
 
-          const payload: Payload = {
-            email,
-            role,
-          };
+          const accessToken = generateAccessToken({ rol, email, avatar });
+          const refreshToken = generateRefreshToken({ rol, email, avatar });
 
-          const accessToken = generateAccessToken(payload);
-
-          return done(null, { accessToken, user: payload });
+          return done(null, { user, accessToken, refreshToken });
         } catch (error) {
-          return done(error as Error, false);
+          return done(null, false);
         }
       }
     )

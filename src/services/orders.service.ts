@@ -1,165 +1,113 @@
 import { db } from "../db/db";
-import { ResultSetHeader } from "../../node_modules/mysql2/promise";
 import {
-  CompleteOrderDetail,
-  Customer,
-  CustomerQuery,
-  GetAllOrders,
-  GetOrderId,
-  GetProductId,
-  OrderDetail,
-  PayOrder,
-  UpdateOrder,
+  ResultSetHeader,
+  RowDataPacket,
+} from "../../node_modules/mysql2/promise";
+import {
+  type GetPedidosResponse,
+  type ProductoInput,
+  type Pedido,
 } from "../types/types";
-import { BadRequestError, NotFoundError } from "../errors/errors";
+import { ErrorFactory } from "../errors/errorFactory";
 
 export class OrderService {
-  static async getOrders() {
+  static async getOrders(
+    filter: string | null,
+    limit: number,
+    offset: number
+  ): Promise<GetPedidosResponse> {
     const conn = await db.getConnection();
     try {
-      const [orders] = await conn.query<GetAllOrders[]>(
-        `SELECT
-  p.id,
-  p.horaEntrega,
-  p.domicilio,
-  p.estado,
-  p.observacion,
-  c.nombre AS nombreCliente,
-  c.apellido AS apellidoCliente,
-  pc.monto,
-  pc.fechaPago,
-  JSON_OBJECTAGG(
-    IFNULL(productosAgrupados.categoria, 'Sin categoría'),
-    productosAgrupados.productos
-  ) AS productos
-FROM pedido AS p
-INNER JOIN cliente AS c ON c.id = p.cliente_id
-LEFT JOIN pagocliente AS pc ON pc.pedido_id = p.id
-LEFT JOIN (
-  SELECT
-    pd.pedido_id,
-    cat.nombre AS categoria,
-    JSON_ARRAYAGG(
-      JSON_OBJECT(
-        'nombre', pr.nombre,
-        'cantidad', pd.cantidad
-      )
-    ) AS productos
-  FROM pedidodetalle AS pd
-  INNER JOIN producto AS pr ON pr.id = pd.producto_id
-  LEFT JOIN categoria AS cat ON cat.id = pr.categoria_id
-  GROUP BY pd.pedido_id, cat.nombre
-) AS productosAgrupados ON productosAgrupados.pedido_id = p.id
+      const [res]: any = await conn.query(`CALL obtener_pedidos(?, ?, ?)`, [
+        filter,
+        limit,
+        offset,
+      ]);
 
-GROUP BY p.id, p.horaEntrega, p.domicilio, c.nombre, c.apellido, pc.monto, pc.fechaPago;
-`
-      );
-
-      if (orders.length === 0) {
-        throw new BadRequestError("Error al obtener todos los pedidos");
+      if (res.length === 0) {
+        throw ErrorFactory.badRequest("Error al obtener todos los pedidos");
       }
-      return { pedidos: orders };
+
+      const data = res[0];
+      const total = res[1]?.[0]?.total || 0;
+
+      return { data, total };
     } catch (error) {
       console.error(error);
       await conn.rollback();
     } finally {
       conn.release();
     }
+    return { data: [], total: 0 };
   }
 
-  static async getOrdersToday() {
+  static async getOrderById(orderId: number): Promise<Pedido> {
     const conn = await db.getConnection();
     try {
-      const [orders] = await conn.query<GetAllOrders[]>(
-        `SELECT
-  p.id,
-  p.horaEntrega,
-  p.domicilio,
-  p.estado,
-  p.observacion,
-  c.nombre AS nombreCliente,
-  c.apellido AS apellidoCliente,
-  pc.monto,
-  pc.fechaPago,
-  JSON_OBJECTAGG(
-    IFNULL(productosAgrupados.categoria, 'Sin categoría'),
-    productosAgrupados.productos
-  ) AS productos
-FROM pedido AS p
-INNER JOIN cliente AS c ON c.id = p.cliente_id
-LEFT JOIN pagocliente AS pc ON pc.pedido_id = p.id
-LEFT JOIN (
-  SELECT
-    pd.pedido_id,
-    cat.nombre AS categoria,
-    JSON_ARRAYAGG(
-      JSON_OBJECT(
-        'nombre', pr.nombre,
-        'cantidad', pd.cantidad
-      )
-    ) AS productos
-  FROM pedidodetalle AS pd
-  INNER JOIN producto AS pr ON pr.id = pd.producto_id
-  LEFT JOIN categoria AS cat ON cat.id = pr.categoria_id
-  GROUP BY pd.pedido_id, cat.nombre
-) AS productosAgrupados ON productosAgrupados.pedido_id = p.id
-
-WHERE DATE(p.fecha) = CURDATE() AND p.estado IN ('preparando', 'listo')
-
-GROUP BY p.id, p.horaEntrega, p.domicilio, c.nombre, c.apellido, pc.monto, pc.fechaPago;
-`
-      );
-
-      return { pedidos: orders };
+      const [[res]]: any = await conn.query("CALL obtener_pedido_id(?)", [
+        orderId,
+      ]);
+      return res[0];
     } catch (error) {
-      console.error(error);
       await conn.rollback();
+      console.log(error);
+      throw error;
     } finally {
       conn.release();
     }
   }
 
   static async createOrder(
-    products: { productId: number; quantity: number }[],
+    customerName: string,
+    customerSurname: string,
+    customerPhone: string,
     address: string,
     deliveryTime: string,
     observation: string,
-    client: Customer
+    products: ProductoInput[],
+    payMethod: string,
+    amount: number
   ) {
     const conn = await db.getConnection();
 
     try {
       await conn.beginTransaction();
 
-      const [clientResult] = await conn.query<CustomerQuery[]>(
-        "SELECT id FROM cliente WHERE telefono = ?",
-        [client.telefono]
+      const [res]: any = await conn.query<RowDataPacket[]>(
+        "CALL crear_pedido(?,?,?,?,?,?)",
+        [
+          customerName,
+          customerSurname,
+          customerPhone,
+          address,
+          deliveryTime,
+          observation,
+        ]
       );
 
-      let clientId: number;
-      if (clientResult.length > 0) {
-        clientId = clientResult[0].id;
-      } else {
-        const [newClient] = await conn.query<ResultSetHeader>(
-          "INSERT INTO cliente (nombre, apellido, telefono) VALUES (?, ?, ?)",
-          [client.nombre, client.apellido, client.telefono]
-        );
-        clientId = newClient.insertId;
+      const orderId = res[0][0]?.pedido_id;
+
+      if (!orderId) throw ErrorFactory.badRequest("Error al crear el pedido");
+
+      await conn.query("CALL insertar_pago_pedido(?, ?, ?)", [
+        orderId,
+        payMethod,
+        amount,
+      ]);
+      for (const product of products) {
+        if (!Number.isInteger(product.cantidad) || product.cantidad! <= 0) {
+          throw ErrorFactory.badRequest(
+            `Cantidad inválida para producto ID ${product.producto_id}`
+          );
+        }
+
+        await conn.query("CALL insertar_producto_pedido(?, ?, ?)", [
+          orderId,
+          product.producto_id,
+          product.cantidad,
+        ]);
       }
 
-      const [order] = await conn.query<ResultSetHeader>(
-        "INSERT INTO pedido (fecha, domicilio, horaEntrega, estado, cliente_id, observacion) VALUES(NOW(), ?, ?, 'preparando', ?, ?)",
-        [address, deliveryTime, clientId, observation]
-      );
-
-      const orderId = order.insertId;
-
-      for (const item of products) {
-        await conn.query(
-          "INSERT INTO pedidodetalle(pedido_id, producto_id, cantidad) VALUES (?, ?, ?)",
-          [orderId, item.productId, item.quantity]
-        );
-      }
       await conn.commit();
       return orderId;
     } catch (error) {
@@ -182,45 +130,33 @@ GROUP BY p.id, p.horaEntrega, p.domicilio, c.nombre, c.apellido, pc.monto, pc.fe
       await conn.beginTransaction();
 
       if (!Number.isInteger(quantity) || quantity <= 0) {
-        throw new BadRequestError(
+        throw ErrorFactory.badRequest(
           "La cantidad debe ser un número mayor a cero."
         );
       }
 
-      const [pedido] = await conn.query<GetOrderId[]>(
-        `SELECT id FROM pedido WHERE id = ?`,
+      const [order] = await conn.query<RowDataPacket[]>(
+        "SELECT id FROM pedido WHERE id = ?",
         [orderId]
       );
-      if (pedido.length === 0) {
-        throw new NotFoundError("El pedido no existe.");
+
+      if (order.length === 0) {
+        throw ErrorFactory.notFound("El pedido con dicho id no existe");
       }
 
-      const [producto] = await conn.query<GetProductId[]>(
-        `SELECT id FROM producto WHERE id = ?`,
+      const [product] = await conn.query<RowDataPacket[]>(
+        "SELECT id FROM producto WHERE id = ?",
         [productId]
       );
-      if (producto.length === 0) {
-        throw new NotFoundError("El producto no existe.");
+      if (product.length === 0) {
+        throw ErrorFactory.notFound("El producto con dicho id no existe");
       }
 
-      const [rows] = await conn.query<OrderDetail[]>(
-        `SELECT cantidad FROM pedidodetalle WHERE pedido_id = ? AND producto_id = ?`,
-        [orderId, productId]
-      );
-
-      if (rows.length > 0) {
-        const newQuantity = rows[0].cantidad + quantity;
-        await conn.query(
-          `UPDATE pedidodetalle SET cantidad = ? WHERE pedido_id = ? AND producto_id = ?`,
-          [newQuantity, orderId, productId]
-        );
-      } else {
-        await conn.query(
-          `INSERT INTO pedidodetalle (pedido_id, producto_id, cantidad) VALUES (?, ?, ?)`,
-          [orderId, productId, quantity]
-        );
-      }
-
+      await conn.query("CALL insertar_producto_pedido(?, ?, ?)", [
+        orderId,
+        productId,
+        quantity,
+      ]);
       await conn.commit();
     } catch (error) {
       await conn.rollback();
@@ -231,68 +167,7 @@ GROUP BY p.id, p.horaEntrega, p.domicilio, c.nombre, c.apellido, pc.monto, pc.fe
     }
   }
 
-  static async getOrderDetail(orderId: number) {
-    const conn = await db.getConnection();
-    try {
-      const [rows] = await conn.query<CompleteOrderDetail[]>(
-        `SELECT
-  o.id,       
-  pr.nombre as productName,
-  pd.cantidad,
-  o.estado,
-  o.domicilio,
-  o.horaEntrega,
-  o.fecha,
-  o.observacion,
-  pg.fechaPago,
-  pg.metodoPago,
-  pg.monto,
-  cat.nombre AS categoria,
-  cus.nombre AS clienteNombre,
-  cus.apellido AS clienteApellido,
-  cus.telefono AS clienteTelefono
-FROM pedidodetalle AS pd
-INNER JOIN producto AS pr ON pr.id = pd.producto_id
-INNER JOIN pedido AS o ON o.id = pd.pedido_id
-INNER JOIN categoria AS cat ON cat.id = pr.categoria_id
-INNER JOIN cliente AS cus ON cus.id = o.cliente_id
-LEFT JOIN pagocliente AS pg ON pg.pedido_id = o.id
-WHERE pd.pedido_id = ?`,
-        [orderId]
-      );
-      return {
-        pedido: {
-          id: rows[0].id,
-          domicilio: rows[0].domicilio,
-          horaEntrega: rows[0].horaEntrega,
-          monto: rows[0].monto,
-          fechaPago: rows[0].fechaPago,
-          estado: rows[0].estado,
-          metodoPago: rows[0].metodoPago,
-          fecha: rows[0].fecha,
-          observacion: rows[0].observacion,
-          cliente: {
-            nombre: rows[0].clienteNombre,
-            apellido: rows[0].clienteApellido,
-            telefono: rows[0].clienteTelefono,
-          },
-          productos: rows.map((row) => ({
-            nombre: row.productName,
-            categoria: row.categoria,
-            cantidad: row.cantidad,
-          })),
-        },
-      };
-    } catch (error) {
-      await conn.rollback();
-      console.log(error);
-      throw error;
-    } finally {
-      conn.release();
-    }
-  }
-
-  static async payOrder(
+  static async insertOrderPayments(
     orderId: number,
     paymentMethod: string,
     amount: number
@@ -300,33 +175,55 @@ WHERE pd.pedido_id = ?`,
     const conn = await db.getConnection();
     await conn.beginTransaction();
     try {
-      const [order] = await conn.query<GetOrderId[]>(
+      const [order] = await conn.query<RowDataPacket[]>(
         "SELECT id FROM pedido WHERE id = ?",
         [orderId]
       );
 
       if (order.length === 0) {
-        throw new NotFoundError("El pedido con dicho id no existe");
+        throw ErrorFactory.notFound("El pedido con dicho id no existe");
       }
 
-      const [existingPayment] = await conn.query<PayOrder[]>(
+      const [existingPayment] = await conn.query<RowDataPacket[]>(
         "SELECT * FROM pagocliente WHERE pedido_id = ?",
         [orderId]
       );
 
       if (existingPayment.length > 0) {
-        throw new BadRequestError("El pedido ya está pago");
+        throw ErrorFactory.badRequest("El pedido ya está pago");
       }
-      await conn.query<PayOrder[]>(
-        `INSERT INTO pagocliente (pedido_id, metodoPago, monto, fechaPago)
-       VALUES (?, ?, ?, NOW())`,
-        [orderId, paymentMethod, amount]
-      );
+      await conn.query(`CALL insertar_pago_pedido(?, ?, ?)`, [
+        orderId,
+        paymentMethod,
+        amount,
+      ]);
 
       await conn.commit();
     } catch (error) {
       await conn.rollback();
       console.error(error);
+      throw error;
+    } finally {
+      conn.release();
+    }
+  }
+
+  static async insertDatePay(orderId: number, date: Date) {
+    const conn = await db.getConnection();
+    await conn.beginTransaction();
+    try {
+      const [res] = await conn.query<ResultSetHeader>(
+        "CALL insertar_fecha_pago(?, ?)",
+        [orderId, date]
+      );
+
+      if (res.affectedRows === 0)
+        throw ErrorFactory.badRequest(
+          "Error al insertar la fecha de pago del pedido"
+        );
+      await conn.commit();
+    } catch (error) {
+      await conn.rollback();
       throw error;
     } finally {
       conn.release();
@@ -339,15 +236,16 @@ WHERE pd.pedido_id = ?`,
     try {
       await conn.beginTransaction();
       const [result] = await conn.query<ResultSetHeader>(
-        `DELETE FROM pedidodetalle WHERE pedido_id = ? AND producto_id = ?`,
+        `CALL eliminar_producto_pedido (? , ?)`,
         [orderId, productId]
       );
 
       if (result.affectedRows === 0) {
-        throw new NotFoundError("Error al eliminar el producto en el pedido");
+        throw ErrorFactory.notFound(
+          "Error al eliminar el producto en el pedido"
+        );
       }
       await conn.commit();
-      return result.affectedRows;
     } catch (error) {
       console.error(error);
       await conn.rollback();
@@ -366,7 +264,7 @@ WHERE pd.pedido_id = ?`,
 
     try {
       await conn.beginTransaction();
-      const [detail] = await conn.query<OrderDetail[]>(
+      const [detail] = await conn.query<RowDataPacket[]>(
         `
         SELECT pd.*
         FROM pedidodetalle pd
@@ -378,17 +276,17 @@ WHERE pd.pedido_id = ?`,
       );
 
       if (detail.length === 0) {
-        throw new NotFoundError(
+        throw ErrorFactory.notFound(
           "El pedido o el producto en el pedido no existe"
         );
       }
-      const [result] = await conn.query<ResultSetHeader>(
-        "UPDATE pedidodetalle SET cantidad = ? WHERE pedido_id = ? AND producto_id = ?",
-        [quantity, orderId, productId]
-      );
+      await conn.query("CALL actualizar_cantidad_producto(?, ?, ?)", [
+        orderId,
+        productId,
+        quantity,
+      ]);
 
       await conn.commit();
-      return result.affectedRows;
     } catch (error) {
       await conn.rollback();
       console.error(error);
@@ -398,36 +296,54 @@ WHERE pd.pedido_id = ?`,
     }
   }
 
-  static async updateOrder(orderId: string, pedido: UpdateOrder) {
+  static async updateOrder(
+    orderId: string,
+    address: string,
+    deliveryTime: string,
+    observation: string,
+    state: string,
+    payMethod: string,
+    amount: number,
+    products: ProductoInput[]
+  ) {
     const conn = await db.getConnection();
-    const {
-      domicilio,
-      horaEntrega,
-      observacion,
-      monto,
-      fechaPago,
-      metodoPago,
-    } = pedido;
+
     try {
       await conn.beginTransaction();
 
       const [resOrder] = await conn.query<ResultSetHeader>(
-        "UPDATE pedido SET horaEntrega = ? , domicilio = ?, observacion = ? WHERE id = ?",
-        [horaEntrega, domicilio, observacion, orderId]
+        "CALL actualizar_pedido(?, ?, ?, ?, ?)",
+        [orderId, address, deliveryTime, observation, state]
       );
 
       const [resCustomerPay] = await conn.query<ResultSetHeader>(
-        "UPDATE pagocliente SET fechaPago = ?, metodoPago = ? , monto = ? WHERE pedido_id = ?",
-        [fechaPago, metodoPago, monto, orderId]
+        "CALL actualizar_pago_pedido(?, ?, ?)",
+        [orderId, payMethod, amount]
       );
 
       if (resOrder.affectedRows === 0) {
-        throw new NotFoundError("Pedido no encontrado");
+        throw ErrorFactory.notFound("Pedido no encontrado");
       }
 
       if (resCustomerPay.affectedRows === 0) {
-        throw new NotFoundError("Pago del cliente no encontrado");
+        throw ErrorFactory.notFound("Pago del cliente no encontrado");
       }
+
+      for (const product of products) {
+        if (
+          !Number.isInteger(product.producto_id) ||
+          product.producto_id <= 0
+        ) {
+          throw ErrorFactory.badRequest("ID de producto inválido");
+        }
+
+        await conn.query("CALL actualizar_cantidad_producto(?, ?, ?)", [
+          orderId,
+          product.producto_id,
+          product.cantidad,
+        ]);
+      }
+
       await conn.commit();
     } catch (error) {
       await conn.rollback();
@@ -444,11 +360,11 @@ WHERE pd.pedido_id = ?`,
     try {
       await conn.beginTransaction();
       const [result] = await conn.query<ResultSetHeader>(
-        "DELETE FROM pedido WHERE id = ?",
+        "CALL eliminar_pedido(?)",
         [orderId]
       );
       if (result.affectedRows === 0) {
-        throw new NotFoundError("El pedido no existe");
+        throw ErrorFactory.notFound("El pedido no existe");
       }
       await conn.commit();
     } catch (error) {

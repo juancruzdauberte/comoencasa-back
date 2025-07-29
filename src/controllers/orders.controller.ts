@@ -7,27 +7,30 @@ export async function getOrders(
   next: NextFunction
 ) {
   try {
-    const orders = await OrderService.getOrders();
-    res.status(200).json(orders);
+    const filter = (req.query.filter as string) || null;
+    console.log(filter);
+    const limit = parseInt(req.query.limit as string) || 10;
+    const page = parseInt(req.query.page as string) || 1;
+    const offset = (page - 1) * limit;
+    const { data, total } = await OrderService.getOrders(filter, limit, offset);
+    res.status(200).json({
+      data,
+      pagination: {
+        currentPage: page,
+        totalItems: total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     next(error);
   }
 }
 
-export async function getOrdersToday(
+export async function getOrderById(
   req: Request,
   res: Response,
   next: NextFunction
 ) {
-  try {
-    const orders = await OrderService.getOrdersToday();
-    res.status(200).json(orders);
-  } catch (error) {
-    next(error);
-  }
-}
-
-export async function getOrderDetail(req: Request, res: Response) {
   try {
     const { oid } = req.params;
 
@@ -35,31 +38,37 @@ export async function getOrderDetail(req: Request, res: Response) {
       res.status(400).json({ message: "ID de pedido es requerido" });
       return;
     }
-    const orderDetail = await OrderService.getOrderDetail(parseInt(oid));
-    res.status(200).json(orderDetail);
+    const data = await OrderService.getOrderById(parseInt(oid));
+    res.status(200).json(data);
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error al obtener el detalle del pedido", error });
+    next(error);
   }
 }
 
 export async function createOrder(req: Request, res: Response) {
   try {
-    const { productos, domicilio, horaEntrega, cliente, observacion } =
-      req.body;
-    const products = productos.map(
-      (p: { productoId: number; cantidad: number }) => ({
-        productId: p.productoId,
-        quantity: p.cantidad,
-      })
-    );
-    await OrderService.createOrder(
-      products,
+    const {
+      nombre_cliente,
+      apellido_cliente,
+      telefono_cliente,
       domicilio,
-      horaEntrega,
+      hora_entrega,
       observacion,
-      cliente
+      productos,
+      monto,
+      metodo_pago,
+    } = req.body;
+
+    await OrderService.createOrder(
+      nombre_cliente,
+      apellido_cliente,
+      telefono_cliente,
+      domicilio,
+      hora_entrega,
+      observacion,
+      productos,
+      metodo_pago,
+      monto
     );
     res.status(201).json({ message: "Pedido creado con éxito." });
   } catch (error) {
@@ -72,26 +81,42 @@ export async function addProductToOrder(
   res: Response,
   next: NextFunction
 ) {
-  const { productoId, pedidoId, cantidad } = req.body;
+  const { producto_id, pedido_id, cantidad } = req.body;
 
   try {
-    await OrderService.addProductToOrder(pedidoId, productoId, cantidad);
+    await OrderService.addProductToOrder(pedido_id, producto_id, cantidad);
     res.status(200).json({ message: "Producto agregado al pedido con exito" });
   } catch (error) {
     next(error);
   }
 }
 
-export async function payOrder(
+export async function insertOrderPayments(
   req: Request,
   res: Response,
   next: NextFunction
 ) {
   try {
-    const { pedidoId, monto, metodoPago } = req.body;
+    const { pedido_id, monto, metodo_pago } = req.body;
 
-    await OrderService.payOrder(pedidoId, metodoPago, monto);
+    await OrderService.insertOrderPayments(pedido_id, metodo_pago, monto);
     res.status(200).json({ message: "Pedido pagado con exito" });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function insertPayDate(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { oid } = req.params;
+    const { date } = req.body;
+
+    await OrderService.insertDatePay(parseInt(oid), date);
+    res.status(200).json({ message: "Fecha de pago insertada con exito" });
   } catch (error) {
     next(error);
   }
@@ -104,13 +129,8 @@ export async function deleteProductFromOrder(
 ) {
   const { oid, pid } = req.params;
   try {
-    const productDeleted = await OrderService.deleteProductFromOrder(
-      parseInt(oid),
-      parseInt(pid)
-    );
-    if (productDeleted === 0) {
-      res.status(404).json({ message: "Producto no encontrado en el pedido" });
-    }
+    await OrderService.deleteProductFromOrder(parseInt(oid), parseInt(pid));
+
     res.status(200).json({ message: "Producto eliminado del pedido" });
   } catch (error) {
     next(error);
@@ -147,16 +167,31 @@ export async function updateOrder(
   next: NextFunction
 ) {
   const { oid } = req.params;
-  const { pedido } = req.body;
+  const {
+    domicilio,
+    hora_entrega,
+    metodo_pago,
+    observacion,
+    estado,
+    productos,
+    monto,
+  } = req.body;
 
   try {
-    if (!pedido) {
-      res
-        .status(400)
-        .json({ message: "Datos incompletos para actualizar el pedido." });
+    if (!oid) {
+      res.status(400).json({ message: "Id no existente." });
       return;
     }
-    await OrderService.updateOrder(oid, pedido);
+    await OrderService.updateOrder(
+      oid,
+      domicilio,
+      hora_entrega,
+      observacion,
+      estado,
+      metodo_pago,
+      monto,
+      productos
+    );
     res.status(200).json({ message: "Pedido actualizado correctamente" });
   } catch (error) {
     next(error);

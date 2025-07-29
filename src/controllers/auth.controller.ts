@@ -1,38 +1,50 @@
-import passport from "passport";
 import { Request, Response, NextFunction } from "express";
-import { UnauthorizedError } from "../errors/errors";
 import config from "../config/config";
+import { Payload, User } from "../types/types";
+import { ErrorFactory } from "../errors/errorFactory";
+import { generateAccessToken, verifyRefreshToken } from "../utils/utils";
 
 export function googleCallback(
   req: Request,
   res: Response,
   next: NextFunction
 ) {
-  passport.authenticate("google", { session: false }, (err, data, info) => {
-    if (err) return next(err);
-    if (!data) {
-      res.redirect(`${config.CLIENT_URL}/unauthorized`);
-      throw new UnauthorizedError("No autorizado");
-    }
+  try {
+    const { user, accessToken, refreshToken } = req.user as {
+      user: User;
+      accessToken: string;
+      refreshToken: string;
+    };
 
-    const { accessToken } = data;
-
-    res.cookie("token", accessToken, {
+    res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: true,
-      maxAge: 1000 * 60 * 60 * 24 * 3,
-      sameSite: "none",
-      path: "/",
+      secure: false,
+      maxAge: 3 * 24 * 60 * 60 * 1000,
+      sameSite: "lax",
     });
 
-    res.redirect(`${config.CLIENT_URL}`);
-  })(req, res, next);
+    res.redirect(`${config.CLIENT_URL}/auth-success?token=${accessToken}`);
+  } catch (error) {
+    next(error);
+  }
 }
 
-export async function status(req: Request, res: Response, next: NextFunction) {
-  const user = req.user;
+export async function refreshToken(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  const { refreshToken } = req.cookies;
+  if (!refreshToken)
+    throw ErrorFactory.unauthorized("Refresh token no encontrado");
   try {
-    res.status(200).json({ auth: true, user });
+    const user = verifyRefreshToken(refreshToken) as Payload;
+    const accessToken = generateAccessToken({
+      rol: user.rol,
+      email: user.email,
+      avatar: user.avatar,
+    });
+    res.json({ accessToken });
   } catch (error) {
     next(error);
   }
@@ -40,12 +52,20 @@ export async function status(req: Request, res: Response, next: NextFunction) {
 
 export async function logOut(req: Request, res: Response, next: NextFunction) {
   try {
-    res.clearCookie("token", {
+    res.clearCookie("refreshToken", {
       httpOnly: true,
-      secure: true,
-      sameSite: "none",
+      secure: false,
+      sameSite: "lax",
     });
     res.redirect(`${config.CLIENT_URL}/login`);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function failure(req: Request, res: Response, next: NextFunction) {
+  try {
+    res.redirect(`${config.CLIENT_URL}/failure`);
   } catch (error) {
     next(error);
   }

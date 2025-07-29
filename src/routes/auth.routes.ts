@@ -1,16 +1,25 @@
 import { Router } from "express";
 import passport from "passport";
-import { googleCallback, logOut, status } from "../controllers/auth.controller";
-import { authenticateRequest } from "../middlewares/authtenticateRequest";
+import {
+  failure,
+  googleCallback,
+  logOut,
+} from "../controllers/auth.controller";
+import { authenticateRequest } from "../middlewares/authenticateRequest";
 
 const router = Router();
 
 router.get(
-  "/google",
-  passport.authenticate("google", { scope: ["profile", "email"] })
+  "/callback",
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+    failureRedirect: `/api/auth/failure`,
+    failureMessage: true,
+    session: false,
+  }),
+  googleCallback
 );
-router.get("/google/callback", googleCallback);
-router.get("/status", authenticateRequest, status);
 router.post("/logout", authenticateRequest, logOut);
+router.get("/failure", authenticateRequest, failure);
 
 export default router;

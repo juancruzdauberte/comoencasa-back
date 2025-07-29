@@ -7,7 +7,7 @@ import authRoutes from "./routes/auth.routes";
 import { errorHandler } from "./middlewares/errorHandler";
 import { configurePassport } from "./config/passport";
 import passport from "passport";
-import { authenticateRequest } from "./middlewares/authtenticateRequest";
+import { authenticateRequest } from "./middlewares/authenticateRequest";
 import cookieParser from "cookie-parser";
 
 const app = express();

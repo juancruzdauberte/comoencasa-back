@@ -1,7 +1,7 @@
 import { Schema, checkSchema } from "express-validator";
 
 const payOrderSchemaValidator: Schema = {
-  pedidoId: {
+  pedido_id: {
     in: ["body"],
     isInt: {
       options: { gt: 0 },
@@ -15,7 +15,7 @@ const payOrderSchemaValidator: Schema = {
       errorMessage: "El monto debe ser mayor a 0",
     },
   },
-  metodoPago: {
+  metodo_pago: {
     in: ["body"],
     isIn: {
       options: [["efectivo", "transferencia"]],
