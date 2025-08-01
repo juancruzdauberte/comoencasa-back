@@ -9,6 +9,7 @@ import { configurePassport } from "./config/passport";
 import passport from "passport";
 import { authenticateRequest } from "./middlewares/authenticateRequest";
 import cookieParser from "cookie-parser";
+import compression from "compression"
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.use(express.json());
 app.use(passport.initialize());
 configurePassport();
 
+app.use(compression())
 app.listen(config.PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${config.PORT}`);
 });

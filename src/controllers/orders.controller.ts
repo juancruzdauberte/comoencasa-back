@@ -45,7 +45,11 @@ export async function getOrderById(
   }
 }
 
-export async function createOrder(req: Request, res: Response) {
+export async function createOrder(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   try {
     const {
       nombre_cliente,
@@ -72,7 +76,7 @@ export async function createOrder(req: Request, res: Response) {
     );
     res.status(201).json({ message: "Pedido creado con éxito." });
   } catch (error) {
-    res.status(500).json({ message: "Error al crear el pedido", error });
+    next(error);
   }
 }
 

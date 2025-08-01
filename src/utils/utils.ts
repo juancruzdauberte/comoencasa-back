@@ -4,7 +4,7 @@ import { Payload } from "../types/types";
 
 export function generateAccessToken(payload: Payload) {
   return jwt.sign(payload, config.JWT_SECRET_ACCESS_TOKEN!, {
-    expiresIn: "15m",
+    expiresIn: "5m",
   });
 }
 

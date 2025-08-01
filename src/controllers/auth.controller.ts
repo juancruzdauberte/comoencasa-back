@@ -57,7 +57,6 @@ export async function logOut(req: Request, res: Response, next: NextFunction) {
       secure: false,
       sameSite: "lax",
     });
-    res.redirect(`${config.CLIENT_URL}/login`);
   } catch (error) {
     next(error);
   }

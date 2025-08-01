@@ -1,18 +1,24 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { ProductService } from "../services/products.service";
 
-export async function getProductsCategory(req: Request, res: Response) {
+export async function getProductsCategory(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   try {
     const products = await ProductService.getProductsCategory();
     res.status(200).json(products);
   } catch (error) {
-    res.status(500).json({
-      message: "Error al obtener los productos por categoría",
-    });
+    next(error);
   }
 }
 
-export async function getProductsByCategory(req: Request, res: Response) {
+export async function getProductsByCategory(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   const { category } = req.query;
 
   try {
@@ -34,15 +40,16 @@ export async function getProductsByCategory(req: Request, res: Response) {
   }
 }
 
-export async function getPrductById(req: Request, res: Response) {
+export async function getPrductById(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   const { id } = req.params;
   try {
     const product = await ProductService.getProductById(parseInt(id));
     res.status(200).json(product);
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error al obtener los productos por categoria" });
-    return;
+    next(error);
   }
 }

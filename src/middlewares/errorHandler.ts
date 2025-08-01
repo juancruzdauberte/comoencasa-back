@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { getErrorMessage } from "../utils/utils";
-import { CustomError } from "../types/types";
+import { AppError } from "../errors/errors";
 
 export function errorHandler(
   err: unknown,
@@ -8,10 +7,13 @@ export function errorHandler(
   res: Response,
   next: NextFunction
 ) {
-  const error = err as CustomError;
-  console.error("Error capturado del middleware", error);
-  res.status(error.statusCode || 500).json({
-    error: true,
-    message: getErrorMessage(error) || "Ha ocurrido un error inesperado.",
-  });
+  const isAppError = err instanceof AppError;
+  const status = isAppError ? err.status : 500;
+  const message = isAppError ? err.message : "Error interno del servidor";
+
+  if (!isAppError || status === 500) {
+    console.log("Error interno", err);
+  }
+
+  res.status(status).json({ error: message });
 }

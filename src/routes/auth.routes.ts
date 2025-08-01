@@ -4,6 +4,7 @@ import {
   failure,
   googleCallback,
   logOut,
+  refreshToken,
 } from "../controllers/auth.controller";
 import { authenticateRequest } from "../middlewares/authenticateRequest";
 
@@ -20,6 +21,7 @@ router.get(
   googleCallback
 );
 router.post("/logout", authenticateRequest, logOut);
+router.post("/refresh", refreshToken);
 router.get("/failure", authenticateRequest, failure);
 
 export default router;
