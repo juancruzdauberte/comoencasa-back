@@ -18,7 +18,7 @@ export function googleCallback(
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: false,
+      secure: true,
       maxAge: 3 * 24 * 60 * 60 * 1000,
       sameSite: "lax",
     });
@@ -54,7 +54,7 @@ export async function logOut(req: Request, res: Response, next: NextFunction) {
   try {
     res.clearCookie("refreshToken", {
       httpOnly: true,
-      secure: false,
+      secure: true,
       sameSite: "lax",
     });
   } catch (error) {
