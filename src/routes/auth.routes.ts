@@ -22,6 +22,6 @@ router.get(
 );
 router.post("/logout", authenticateRequest, logOut);
 router.post("/refresh", refreshToken);
-router.get("/failure", authenticateRequest, failure);
+router.get("/failure", failure);
 
 export default router;
