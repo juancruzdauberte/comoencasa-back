@@ -13,7 +13,7 @@ program.allowExcessArguments();
 program.parse();
 const { mode } = program.opts();
 
-process.loadEnvFile(mode === "prod" ? ".env.prod" : ".env.dev");
+process.loadEnvFile(mode === "prod" ? ".env" : ".env.dev");
 
 const config = {
   PORT: process.env.PORT,
