@@ -4,7 +4,9 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev:dev": "tsx watch src/index.ts --mode dev",
+    "dev:prod": "tsx watch src/index.ts --mode prod",
+    "dev": "tsx watch src/index.ts --mode dev",
     "start": "tsx src/index.ts"
   },
   "keywords": [],
@@ -13,6 +15,7 @@
   "description": "",
   "dependencies": {
     "@types/passport-google-oauth20": "^2.0.16",
+    "commander": "^14.0.0",
     "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",

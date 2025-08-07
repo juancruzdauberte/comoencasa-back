@@ -1,6 +1,19 @@
-import dotenv from "dotenv";
+import { Command, Option } from "commander";
 
-dotenv.config();
+const program = new Command();
+
+program.addOption(
+  new Option("-m, --mode <MODE>", "Modo de ejecucion del servidor")
+    .choices(["prod", "dev"])
+    .default("dev")
+);
+program.allowUnknownOption();
+program.allowExcessArguments();
+
+program.parse();
+const { mode } = program.opts();
+
+process.loadEnvFile(mode === "prod" ? ".env.prod" : ".env.dev");
 
 const config = {
   PORT: process.env.PORT,
