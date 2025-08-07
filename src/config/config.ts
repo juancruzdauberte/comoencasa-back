@@ -1,4 +1,6 @@
 import { Command, Option } from "commander";
+import dotenv from "dotenv";
+import fs from "fs";
 
 const program = new Command();
 
@@ -13,7 +15,13 @@ program.allowExcessArguments();
 program.parse();
 const { mode } = program.opts();
 
-process.loadEnvFile(mode === "prod" ? ".env" : ".env.dev");
+const envFile = mode === "prod" ? ".env" : ".env.dev";
+
+if (fs.existsSync(envFile)) {
+  dotenv.config({ path: envFile });
+} else {
+  dotenv.config();
+}
 
 const config = {
   PORT: process.env.PORT,
@@ -31,5 +39,4 @@ const config = {
   ADMIN_EMAIL: process.env.ADMIN_EMAIL,
   CLIENT_EMAIL: process.env.CLIENT_EMAIL,
 };
-
 export default config;
