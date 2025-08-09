@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { ProductService } from "../services/products.service";
+import { ErrorFactory } from "../errors/errorFactory";
 
 export async function getProductsCategory(
   req: Request,
@@ -49,6 +50,36 @@ export async function getPrductById(
   try {
     const product = await ProductService.getProductById(parseInt(id));
     res.status(200).json(product);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function createProduct(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  const { nombre, categoria_id } = req.body;
+  try {
+    const cateogry = await ProductService.createProduct(nombre, categoria_id);
+    if (!cateogry) throw ErrorFactory.badRequest("Error al crear la categoria");
+    res.status(201).json({ message: `Producto creado ${nombre}` });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function createCategory(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  const { nombre } = req.body;
+  try {
+    const cateogry = await ProductService.createCategory(nombre);
+    if (!cateogry) throw ErrorFactory.badRequest("Error al crear la categoria");
+    res.status(201).json({ message: `Categoria creada ${cateogry}` });
   } catch (error) {
     next(error);
   }

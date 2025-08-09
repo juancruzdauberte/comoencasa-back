@@ -1,4 +1,6 @@
 import { db } from "../db/db";
+import { ErrorFactory } from "../errors/errorFactory";
+import { AppError } from "../errors/errors";
 
 export class ProductService {
   static async getProductsCategory() {
@@ -7,8 +9,12 @@ export class ProductService {
       const [rows] = await conn.query("SELECT * FROM categoria");
       return rows;
     } catch (error) {
-      console.error(error);
       await conn.rollback();
+      if (error instanceof AppError) {
+        throw error;
+      }
+
+      throw ErrorFactory.internal("Error inesperado del sistema");
     } finally {
       conn.release();
     }
@@ -24,7 +30,11 @@ export class ProductService {
       return rows;
     } catch (error) {
       await conn.rollback();
-      console.error(error);
+      if (error instanceof AppError) {
+        throw error;
+      }
+
+      throw ErrorFactory.internal("Error inesperado del sistema");
     } finally {
       conn.release();
     }
@@ -39,8 +49,12 @@ export class ProductService {
       );
       return res;
     } catch (error) {
-      console.error(error);
       await conn.rollback();
+      if (error instanceof AppError) {
+        throw error;
+      }
+
+      throw ErrorFactory.internal("Error inesperado del sistema");
     } finally {
       conn.release();
     }
@@ -54,8 +68,57 @@ export class ProductService {
       );
       return res;
     } catch (error) {
-      console.error(error);
       await conn.rollback();
+      if (error instanceof AppError) {
+        throw error;
+      }
+
+      throw ErrorFactory.internal("Error inesperado del sistema");
+    } finally {
+      conn.release();
+    }
+  }
+
+  static async createProduct(productName: string, categoryId: number) {
+    const conn = await db.getConnection();
+
+    try {
+      const [res]: any = await conn.query("CALL crear_producto(?, ?)", [
+        productName,
+        categoryId,
+      ]);
+
+      return res[0];
+    } catch (error) {
+      await conn.rollback();
+      if (error instanceof AppError) {
+        throw error;
+      }
+
+      throw ErrorFactory.internal("Error inesperado del sistema");
+    } finally {
+      conn.release();
+    }
+  }
+
+  static async createCategory(categoryName: string) {
+    const conn = await db.getConnection();
+
+    try {
+      const [res]: any = await conn.query("CALL crear_categoria(?)", [
+        categoryName,
+      ]);
+      if (res.length === 0) {
+        throw ErrorFactory.badRequest("Error al crear la categoria");
+      }
+      return res[0];
+    } catch (error) {
+      await conn.rollback();
+      if (error instanceof AppError) {
+        throw error;
+      }
+
+      throw ErrorFactory.internal("Error inesperado del sistema");
     } finally {
       conn.release();
     }
