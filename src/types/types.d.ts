@@ -3,6 +3,11 @@ export type GetPedidosResponse = {
   total: number;
 };
 
+export type GetClientResponse = {
+  nombre: string;
+  apellido: string;
+};
+
 export type ProductoInput = {
   producto_id: number;
   cantidad?: number;
@@ -29,10 +34,6 @@ export type Pedido = {
   metodo_pago: "efectivo" | "transferencia" | null;
   observacion: string | null;
   productos: ProductoPedido[];
-};
-
-export type RawPedido = Omit<Pedido, "productos"> & {
-  productos: string | null;
 };
 
 export type UserRole = "admin" | "client" | "none";

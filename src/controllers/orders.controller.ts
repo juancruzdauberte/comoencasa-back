@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { OrderService } from "../services/orders.service";
+import { ErrorFactory } from "../errors/errorFactory";
 
 export async function getOrders(
   req: Request,
@@ -8,7 +9,6 @@ export async function getOrders(
 ) {
   try {
     const filter = (req.query.filter as string) || null;
-    console.log(filter);
     const limit = parseInt(req.query.limit as string) || 10;
     const page = parseInt(req.query.page as string) || 1;
     const offset = (page - 1) * limit;
@@ -95,32 +95,20 @@ export async function addProductToOrder(
   }
 }
 
-export async function insertOrderPayments(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
-  try {
-    const { pedido_id, monto, metodo_pago } = req.body;
-
-    await OrderService.insertOrderPayments(pedido_id, metodo_pago, monto);
-    res.status(200).json({ message: "Pedido pagado con exito" });
-  } catch (error) {
-    next(error);
-  }
-}
-
-export async function insertPayDate(
+export async function insertOrderDatePay(
   req: Request,
   res: Response,
   next: NextFunction
 ) {
   try {
     const { oid } = req.params;
-    const { date } = req.body;
 
-    await OrderService.insertDatePay(parseInt(oid), date);
-    res.status(200).json({ message: "Fecha de pago insertada con exito" });
+    const orderId = Number(oid);
+    if (!orderId || isNaN(orderId)) {
+      throw ErrorFactory.badRequest("ID de pedido inválido");
+    }
+    await OrderService.insertOrderDatePay(orderId);
+    res.status(200).json({ message: "Pedido pagado con exito" });
   } catch (error) {
     next(error);
   }

@@ -167,54 +167,13 @@ export class OrderService {
     }
   }
 
-  static async insertOrderPayments(
-    orderId: number,
-    paymentMethod: string,
-    amount: number
-  ) {
-    const conn = await db.getConnection();
-    await conn.beginTransaction();
-    try {
-      const [order] = await conn.query<RowDataPacket[]>(
-        "SELECT id FROM pedido WHERE id = ?",
-        [orderId]
-      );
-
-      if (order.length === 0) {
-        throw ErrorFactory.notFound("El pedido con dicho id no existe");
-      }
-
-      const [existingPayment] = await conn.query<RowDataPacket[]>(
-        "SELECT * FROM pagocliente WHERE pedido_id = ?",
-        [orderId]
-      );
-
-      if (existingPayment.length > 0) {
-        throw ErrorFactory.badRequest("El pedido ya está pago");
-      }
-      await conn.query(`CALL insertar_pago_pedido(?, ?, ?)`, [
-        orderId,
-        paymentMethod,
-        amount,
-      ]);
-
-      await conn.commit();
-    } catch (error) {
-      await conn.rollback();
-      console.error(error);
-      throw error;
-    } finally {
-      conn.release();
-    }
-  }
-
-  static async insertDatePay(orderId: number, date: Date) {
+  static async insertOrderDatePay(orderId: number) {
     const conn = await db.getConnection();
     await conn.beginTransaction();
     try {
       const [res] = await conn.query<ResultSetHeader>(
-        "CALL insertar_fecha_pago(?, ?)",
-        [orderId, date]
+        "CALL insertar_fecha_pago(?)",
+        [orderId]
       );
 
       if (res.affectedRows === 0)
