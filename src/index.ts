@@ -5,6 +5,7 @@ import productsRoutes from "./routes/products.routes";
 import ordersRoutes from "./routes/orders.routes";
 import authRoutes from "./routes/auth.routes";
 import clientsRoutes from "./routes/client.routes";
+import financesRoutes from "./routes/finances.routes";
 import { errorHandler } from "./middlewares/errorHandler";
 import { configurePassport } from "./config/passport";
 import passport from "passport";
@@ -34,6 +35,7 @@ app.listen(config.PORT, () => {
 app.use("/api/products", authenticateRequest, productsRoutes);
 app.use("/api/orders", authenticateRequest, ordersRoutes);
 app.use("/api/clients", authenticateRequest, clientsRoutes);
+app.use("/api/finances", authenticateRequest, financesRoutes);
 app.use("/api/auth", authRoutes);
 
 app.use(errorHandler);
