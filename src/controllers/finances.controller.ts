@@ -39,3 +39,54 @@ export async function getCashAmountToday(
     next(error);
   }
 }
+
+export async function getAmountMonthly(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  const { month, year } = req.query;
+  try {
+    const amount = await FinanceClass.getAmountMonthly(
+      Number(month),
+      Number(year)
+    );
+    res.status(200).json(amount);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getTrasnferAmountMonthly(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  const { month, year } = req.query;
+  try {
+    const amount = await FinanceClass.getTransferAmountMonthly(
+      Number(month),
+      Number(year)
+    );
+    res.status(200).json(amount);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getCashAmountMonthly(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  const { month, year } = req.query;
+  try {
+    const amount = await FinanceClass.getCashAmountMonthly(
+      Number(month),
+      Number(year)
+    );
+    res.status(200).json(amount);
+  } catch (error) {
+    next(error);
+  }
+}

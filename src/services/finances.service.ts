@@ -50,4 +50,58 @@ export class FinanceClass {
       conn.release();
     }
   }
+
+  static async getAmountMonthly(month: number, year: number) {
+    const conn = await db.getConnection();
+    try {
+      const [res]: any = await conn.query(
+        "CALL obtener_monto_total_mes (?, ?)",
+        [month, year]
+      );
+      return res[0][0];
+    } catch (error) {
+      await conn.rollback();
+      if (error instanceof AppError) {
+        throw error;
+      }
+    } finally {
+      conn.release();
+    }
+  }
+
+  static async getTransferAmountMonthly(month: number, year: number) {
+    const conn = await db.getConnection();
+    try {
+      const [res]: any = await conn.query(
+        "CALL obtener_monto_total_mes_trans (?, ?)",
+        [month, year]
+      );
+      return res[0][0];
+    } catch (error) {
+      await conn.rollback();
+      if (error instanceof AppError) {
+        throw error;
+      }
+    } finally {
+      conn.release();
+    }
+  }
+
+  static async getCashAmountMonthly(month: number, year: number) {
+    const conn = await db.getConnection();
+    try {
+      const [res]: any = await conn.query(
+        "CALL obtener_monto_total_mes_efec (?, ?)",
+        [month, year]
+      );
+      return res[0][0];
+    } catch (error) {
+      await conn.rollback();
+      if (error instanceof AppError) {
+        throw error;
+      }
+    } finally {
+      conn.release();
+    }
+  }
 }
