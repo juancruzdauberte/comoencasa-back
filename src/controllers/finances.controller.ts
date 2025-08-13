@@ -90,3 +90,46 @@ export async function getCashAmountMonthly(
     next(error);
   }
 }
+
+export async function getDeliveryAmountToPay(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const amountToPay = await FinanceClass.getDeliveryAmountToPay();
+    res.status(200).json(amountToPay);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getValueFinanceParam(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { paramName } = req.query;
+    const price = await FinanceClass.getValueFinanceParam(String(paramName));
+    res.status(200).json(price);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateValueFinanceParam(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { value, paramName } = req.body;
+    await FinanceClass.updateValueFinanceParam(Number(value), paramName);
+    res
+      .status(200)
+      .json({ message: "Parametro financiero actualizado correctamente" });
+  } catch (error) {
+    next(error);
+  }
+}

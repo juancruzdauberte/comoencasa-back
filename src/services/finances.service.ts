@@ -1,4 +1,5 @@
 import { db } from "../db/db";
+import { ErrorFactory } from "../errors/errorFactory";
 import { AppError } from "../errors/errors";
 
 export class FinanceClass {
@@ -95,6 +96,61 @@ export class FinanceClass {
         [month, year]
       );
       return res[0][0];
+    } catch (error) {
+      await conn.rollback();
+      if (error instanceof AppError) {
+        throw error;
+      }
+    } finally {
+      conn.release();
+    }
+  }
+
+  static async getDeliveryAmountToPay() {
+    const conn = await db.getConnection();
+    try {
+      const [res]: any = await conn.query("CALL calcular_total_motoquero()");
+      return res[0][0];
+    } catch (error) {
+      await conn.rollback();
+      if (error instanceof AppError) {
+        throw error;
+      }
+    } finally {
+      conn.release();
+    }
+  }
+
+  static async getValueFinanceParam(paramName: string) {
+    const conn = await db.getConnection();
+    try {
+      const [res]: any = await conn.query(
+        "SELECT pf.valor FROM parametrosfinancieros pf WHERE pf.nombreParametro = ? ",
+        [paramName]
+      );
+      if (!res.length)
+        throw ErrorFactory.badRequest("No se encontro el valor a pagar");
+      return res[0];
+    } catch (error) {
+      await conn.rollback();
+      if (error instanceof AppError) {
+        throw error;
+      }
+    } finally {
+      conn.release();
+    }
+  }
+
+  static async updateValueFinanceParam(value: number, paramName: string) {
+    const conn = await db.getConnection();
+    try {
+      const [res]: any = await conn.query(
+        "UPDATE parametrosfinancieros pf SET pf.valor = ? WHERE pf.nombreParametro = ?",
+        [value, paramName]
+      );
+      if (!res.length)
+        throw ErrorFactory.badRequest("No se encontro el valor a pagar");
+      return res[0];
     } catch (error) {
       await conn.rollback();
       if (error instanceof AppError) {
