@@ -83,10 +83,66 @@ export class ProductService {
     const conn = await db.getConnection();
 
     try {
+      await conn.beginTransaction();
+
       const [res]: any = await conn.query("CALL crear_producto(?, ?)", [
         productName,
         categoryId,
       ]);
+      await conn.commit();
+
+      return res[0];
+    } catch (error) {
+      await conn.rollback();
+      if (error instanceof AppError) {
+        throw error;
+      }
+
+      throw ErrorFactory.internal("Error inesperado del sistema");
+    } finally {
+      conn.release();
+    }
+  }
+
+  static async deleteProduct(id: number) {
+    const conn = await db.getConnection();
+    try {
+      await conn.beginTransaction();
+
+      const [res]: any = await db.query(
+        "DELETE FROM producto p WHERE p.id = ?",
+        [id]
+      );
+      if (!res) {
+        throw ErrorFactory.badRequest("Error al eliminar un producto");
+      }
+      await conn.commit();
+
+      return res[0];
+    } catch (error) {
+      await conn.rollback();
+      if (error instanceof AppError) {
+        throw error;
+      }
+
+      throw ErrorFactory.internal("Error inesperado del sistema");
+    } finally {
+      conn.release();
+    }
+  }
+
+  static async deleteCategory(id: number) {
+    const conn = await db.getConnection();
+    try {
+      await conn.beginTransaction();
+      const [res]: any = await db.query(
+        "DELETE FROM categoria c WHERE c.id = ?",
+        [id]
+      );
+      if (!res) {
+        throw ErrorFactory.badRequest("Error al eliminar la categoria");
+      }
+      await conn.commit();
 
       return res[0];
     } catch (error) {
@@ -105,12 +161,16 @@ export class ProductService {
     const conn = await db.getConnection();
 
     try {
+      await conn.beginTransaction();
+
       const [res]: any = await conn.query("CALL crear_categoria(?)", [
         categoryName,
       ]);
       if (res.length === 0) {
         throw ErrorFactory.badRequest("Error al crear la categoria");
       }
+      await conn.commit();
+
       return res[0];
     } catch (error) {
       await conn.rollback();

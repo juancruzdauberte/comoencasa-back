@@ -46,9 +46,9 @@ export async function getPrductById(
   res: Response,
   next: NextFunction
 ) {
-  const { id } = req.params;
+  const { pid } = req.params;
   try {
-    const product = await ProductService.getProductById(parseInt(id));
+    const product = await ProductService.getProductById(parseInt(pid));
     res.status(200).json(product);
   } catch (error) {
     next(error);
@@ -65,6 +65,34 @@ export async function createProduct(
     const cateogry = await ProductService.createProduct(nombre, categoria_id);
     if (!cateogry) throw ErrorFactory.badRequest("Error al crear la categoria");
     res.status(201).json({ message: `Producto creado ${nombre}` });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteProduct(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { pid } = req.params;
+    await ProductService.deleteProduct(Number(pid));
+    res.status(200).json({ message: "Producto eliminado" });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteCategory(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { cid } = req.params;
+    await ProductService.deleteCategory(Number(cid));
+    res.status(200).json({ message: "Categoria eliminada" });
   } catch (error) {
     next(error);
   }
