@@ -144,12 +144,14 @@ export class FinanceClass {
   static async updateValueFinanceParam(value: number, paramName: string) {
     const conn = await db.getConnection();
     try {
+      await conn.beginTransaction();
       const [res]: any = await conn.query(
         "UPDATE parametrosfinancieros pf SET pf.valor = ? WHERE pf.nombreParametro = ?",
         [value, paramName]
       );
       if (!res.length)
         throw ErrorFactory.badRequest("No se encontro el valor a pagar");
+      await conn.commit();
       return res[0];
     } catch (error) {
       await conn.rollback();
