@@ -21,3 +21,7 @@ export function generateRefreshToken(payload: Payload) {
 export function verifyRefreshToken(token: string) {
   return jwt.verify(token, config.JWT_SECRET_REFRESH_TOKEN!);
 }
+
+export function dateUTC3(date: Date) {
+  return new Date(date.getTime() - 3 * 60 * 60 * 1000);
+}

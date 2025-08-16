@@ -133,3 +133,16 @@ export async function updateValueFinanceParam(
     next(error);
   }
 }
+
+export async function getDeliveryCashAmount(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const total = await FinanceClass.getDeliveryCashAmount();
+    res.status(200).json(total);
+  } catch (error) {
+    next(error);
+  }
+}

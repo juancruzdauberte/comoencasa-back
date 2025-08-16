@@ -15,7 +15,7 @@ router.get("/categorys", getProductsCategory);
 router.get("/", getProductsByCategory);
 router.get("/:pid", getPrductById);
 router.delete("/:pid", deleteProduct);
-router.delete("/:cid", deleteCategory);
+router.delete("/category/:cid", deleteCategory);
 router.post("/", createProduct);
 router.post("/category", createCategory);
 

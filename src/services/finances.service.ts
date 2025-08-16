@@ -121,6 +121,23 @@ export class FinanceClass {
     }
   }
 
+  static async getDeliveryCashAmount() {
+    const conn = await db.getConnection();
+    try {
+      const [res]: any = await conn.query(
+        "CALL obtener_monto_total_delivery_hoy_efec()"
+      );
+      return res[0][0];
+    } catch (error) {
+      await conn.rollback();
+      if (error instanceof AppError) {
+        throw error;
+      }
+    } finally {
+      conn.release();
+    }
+  }
+
   static async getValueFinanceParam(paramName: string) {
     const conn = await db.getConnection();
     try {
