@@ -12,11 +12,9 @@ import passport from "passport";
 import { authenticateRequest } from "./middlewares/authenticateRequest";
 import cookieParser from "cookie-parser";
 import compression from "compression";
-import helmet from "helmet";
 
 const app = express();
 
-app.use(helmet())
 app.use(express.urlencoded({ extended: true }));
 app.use(
   cors({
