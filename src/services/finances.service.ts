@@ -11,7 +11,6 @@ export class FinanceClass {
       if (error instanceof AppError) {
         throw error;
       }
-      throw ErrorFactory.internal("Error inesperado del sistema");
     }
   }
 
@@ -25,7 +24,6 @@ export class FinanceClass {
       if (error instanceof AppError) {
         throw error;
       }
-      throw ErrorFactory.internal("Error inesperado del sistema");
     }
   }
 
@@ -37,7 +35,6 @@ export class FinanceClass {
       if (error instanceof AppError) {
         throw error;
       }
-      throw ErrorFactory.internal("Error inesperado del sistema");
     }
   }
 
@@ -52,7 +49,6 @@ export class FinanceClass {
       if (error instanceof AppError) {
         throw error;
       }
-      throw ErrorFactory.internal("Error inesperado del sistema");
     }
   }
 
@@ -67,7 +63,6 @@ export class FinanceClass {
       if (error instanceof AppError) {
         throw error;
       }
-      throw ErrorFactory.internal("Error inesperado del sistema");
     }
   }
 
@@ -82,7 +77,6 @@ export class FinanceClass {
       if (error instanceof AppError) {
         throw error;
       }
-      throw ErrorFactory.internal("Error inesperado del sistema");
     }
   }
 
@@ -94,7 +88,6 @@ export class FinanceClass {
       if (error instanceof AppError) {
         throw error;
       }
-      throw ErrorFactory.internal("Error inesperado del sistema");
     }
   }
 
@@ -108,7 +101,6 @@ export class FinanceClass {
       if (error instanceof AppError) {
         throw error;
       }
-      throw ErrorFactory.internal("Error inesperado del sistema");
     }
   }
 
@@ -125,7 +117,6 @@ export class FinanceClass {
       if (error instanceof AppError) {
         throw error;
       }
-      throw ErrorFactory.internal("Error inesperado del sistema");
     }
   }
 
