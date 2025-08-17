@@ -4,144 +4,117 @@ import { AppError } from "../errors/errors";
 
 export class FinanceClass {
   static async getAmountToday() {
-    const conn = await db.getConnection();
     try {
-      const [res]: any = await conn.query("CALL obtener_monto_total_hoy ()");
+      const [res]: any = await db.query("CALL obtener_monto_total_hoy ()");
       return res[0][0];
     } catch (error) {
-      await conn.rollback();
       if (error instanceof AppError) {
         throw error;
       }
-    } finally {
-      conn.release();
+      throw ErrorFactory.internal("Error inesperado del sistema");
     }
   }
 
   static async getTransferAmountToday() {
-    const conn = await db.getConnection();
     try {
-      const [res]: any = await conn.query(
+      const [res]: any = await db.query(
         "CALL obtener_monto_total_hoy_trans ()"
       );
       return res[0][0];
     } catch (error) {
-      await conn.rollback();
       if (error instanceof AppError) {
         throw error;
       }
-    } finally {
-      conn.release();
+      throw ErrorFactory.internal("Error inesperado del sistema");
     }
   }
 
   static async getCashAmountToday() {
-    const conn = await db.getConnection();
     try {
-      const [res]: any = await conn.query(
-        "CALL obtener_monto_total_hoy_efec ()"
-      );
+      const [res]: any = await db.query("CALL obtener_monto_total_hoy_efec ()");
       return res[0][0];
     } catch (error) {
-      await conn.rollback();
       if (error instanceof AppError) {
         throw error;
       }
-    } finally {
-      conn.release();
+      throw ErrorFactory.internal("Error inesperado del sistema");
     }
   }
 
   static async getAmountMonthly(month: number, year: number) {
-    const conn = await db.getConnection();
     try {
-      const [res]: any = await conn.query(
-        "CALL obtener_monto_total_mes (?, ?)",
-        [month, year]
-      );
+      const [res]: any = await db.query("CALL obtener_monto_total_mes (?, ?)", [
+        month,
+        year,
+      ]);
       return res[0][0];
     } catch (error) {
-      await conn.rollback();
       if (error instanceof AppError) {
         throw error;
       }
-    } finally {
-      conn.release();
+      throw ErrorFactory.internal("Error inesperado del sistema");
     }
   }
 
   static async getTransferAmountMonthly(month: number, year: number) {
-    const conn = await db.getConnection();
     try {
-      const [res]: any = await conn.query(
+      const [res]: any = await db.query(
         "CALL obtener_monto_total_mes_trans (?, ?)",
         [month, year]
       );
       return res[0][0];
     } catch (error) {
-      await conn.rollback();
       if (error instanceof AppError) {
         throw error;
       }
-    } finally {
-      conn.release();
+      throw ErrorFactory.internal("Error inesperado del sistema");
     }
   }
 
   static async getCashAmountMonthly(month: number, year: number) {
-    const conn = await db.getConnection();
     try {
-      const [res]: any = await conn.query(
+      const [res]: any = await db.query(
         "CALL obtener_monto_total_mes_efec (?, ?)",
         [month, year]
       );
       return res[0][0];
     } catch (error) {
-      await conn.rollback();
       if (error instanceof AppError) {
         throw error;
       }
-    } finally {
-      conn.release();
+      throw ErrorFactory.internal("Error inesperado del sistema");
     }
   }
 
   static async getDeliveryAmountToPay() {
-    const conn = await db.getConnection();
     try {
-      const [res]: any = await conn.query("CALL calcular_total_motoquero()");
+      const [res]: any = await db.query("CALL calcular_total_motoquero()");
       return res[0][0];
     } catch (error) {
-      await conn.rollback();
       if (error instanceof AppError) {
         throw error;
       }
-    } finally {
-      conn.release();
+      throw ErrorFactory.internal("Error inesperado del sistema");
     }
   }
 
   static async getDeliveryCashAmount() {
-    const conn = await db.getConnection();
     try {
-      const [res]: any = await conn.query(
+      const [res]: any = await db.query(
         "CALL obtener_monto_total_delivery_hoy_efec()"
       );
       return res[0][0];
     } catch (error) {
-      await conn.rollback();
       if (error instanceof AppError) {
         throw error;
       }
-    } finally {
-      conn.release();
+      throw ErrorFactory.internal("Error inesperado del sistema");
     }
   }
 
   static async getValueFinanceParam(paramName: string) {
-    const conn = await db.getConnection();
     try {
-      const [res]: any = await conn.query(
+      const [res]: any = await db.query(
         "SELECT pf.valor FROM parametrosfinancieros pf WHERE pf.nombreParametro = ? ",
         [paramName]
       );
@@ -149,12 +122,10 @@ export class FinanceClass {
         throw ErrorFactory.badRequest("No se encontro el valor a pagar");
       return res[0];
     } catch (error) {
-      await conn.rollback();
       if (error instanceof AppError) {
         throw error;
       }
-    } finally {
-      conn.release();
+      throw ErrorFactory.internal("Error inesperado del sistema");
     }
   }
 

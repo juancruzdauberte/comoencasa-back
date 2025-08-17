@@ -9,6 +9,7 @@ import {
   type Pedido,
 } from "../types/types";
 import { ErrorFactory } from "../errors/errorFactory";
+import { AppError } from "../errors/errors";
 
 export class OrderService {
   static async getOrders(
@@ -16,9 +17,8 @@ export class OrderService {
     limit: number,
     offset: number
   ): Promise<GetPedidosResponse> {
-    const conn = await db.getConnection();
     try {
-      const [res]: any = await conn.query(`CALL obtener_pedidos(?, ?, ?)`, [
+      const [res]: any = await db.query(`CALL obtener_pedidos(?, ?, ?)`, [
         filter,
         limit,
         offset,
@@ -33,27 +33,24 @@ export class OrderService {
 
       return { data, total };
     } catch (error) {
-      console.error(error);
-      await conn.rollback();
-    } finally {
-      conn.release();
+      if (error instanceof AppError) {
+        throw error;
+      }
+      throw ErrorFactory.internal("Error al obtener los pedidos");
     }
-    return { data: [], total: 0 };
   }
 
   static async getOrderById(orderId: number): Promise<Pedido> {
-    const conn = await db.getConnection();
     try {
-      const [[res]]: any = await conn.query("CALL obtener_pedido_id(?)", [
+      const [[res]]: any = await db.query("CALL obtener_pedido_id(?)", [
         orderId,
       ]);
       return res[0];
     } catch (error) {
-      await conn.rollback();
-      console.log(error);
-      throw error;
-    } finally {
-      conn.release();
+      if (error instanceof AppError) {
+        throw error;
+      }
+      throw ErrorFactory.internal("Error al obtener los pedidos");
     }
   }
 
