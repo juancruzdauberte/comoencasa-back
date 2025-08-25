@@ -62,8 +62,8 @@ export async function createProduct(
 ) {
   const { nombre, categoria_id } = req.body;
   try {
-    const cateogry = await ProductService.createProduct(nombre, categoria_id);
-    if (!cateogry) throw ErrorFactory.badRequest("Error al crear la categoria");
+    const product = await ProductService.createProduct(nombre, categoria_id);
+    if (!product) throw ErrorFactory.badRequest("Error al crear el producto");
     res.status(201).json({ message: `Producto creado ${nombre}` });
   } catch (error) {
     next(error);
