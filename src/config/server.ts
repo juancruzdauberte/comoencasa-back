@@ -12,6 +12,7 @@ import passport from "passport";
 import { authenticateRequest } from "../middlewares/authenticateRequest";
 import cookieParser from "cookie-parser";
 import compression from "compression";
+import { setupSwagger } from "../config/swagger";
 
 const app = express();
 
@@ -27,6 +28,9 @@ app.use(express.json());
 app.use(passport.initialize());
 configurePassport();
 app.use(compression());
+
+// Setup Swagger Documentation
+setupSwagger(app);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/products", authenticateRequest, productsRoutes);

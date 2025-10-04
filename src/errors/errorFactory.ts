@@ -19,7 +19,7 @@ export class ErrorFactory {
   static unauthorized(message: string) {
     return new UnauthorizedError(message);
   }
-  static forbbiden(message: string) {
+  static forbidden(message: string) {
     return new ForbiddenError(message);
   }
 }
