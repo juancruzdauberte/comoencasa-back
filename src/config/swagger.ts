@@ -1,7 +1,7 @@
 import swaggerJSDoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 import { Express } from "express";
-import { authenticateRequest } from "../middlewares/authenticateRequest";
+import protectedDocs from "../middlewares/protectedDocs";
 
 const options: swaggerJSDoc.Options = {
   definition: {
@@ -473,7 +473,7 @@ export function setupSwagger(app: Express) {
     },
   };
 
-  app.use("/api/docs", authenticateRequest, swaggerUi.serve);
+  app.use("/api/docs", protectedDocs, swaggerUi.serve);
   app.get("/api/docs", swaggerUi.setup(swaggerSpec, swaggerUiOptions));
 
   app.get("/api/docs.json", (req, res) => {

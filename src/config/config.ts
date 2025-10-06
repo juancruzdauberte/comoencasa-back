@@ -57,6 +57,7 @@ function validateConfig(): Config {
     "DB_PORT",
     "JWT_SECRET_ACCESS_TOKEN",
     "JWT_SECRET_REFRESH_TOKEN",
+    "NODE_ENV",
   ];
 
   const missing: string[] = [];
@@ -124,7 +125,7 @@ function validateConfig(): Config {
     DB_PORT: process.env.DB_PORT!,
     JWT_SECRET_ACCESS_TOKEN: process.env.JWT_SECRET_ACCESS_TOKEN!,
     JWT_SECRET_REFRESH_TOKEN: process.env.JWT_SECRET_REFRESH_TOKEN!,
-    NODE_ENV: mode === "prod" ? "production" : "development",
+    NODE_ENV: process.env.NODE_ENV!,
   };
 }
 

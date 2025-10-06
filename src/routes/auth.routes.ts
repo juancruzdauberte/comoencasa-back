@@ -13,26 +13,6 @@ const router = Router();
 
 /**
  * @swagger
- * /api/auth/google:
- *   get:
- *     summary: Iniciar sesión con Google
- *     tags: [Authentication]
- *     description: |
- *       Inicia el flujo de autenticación con Google OAuth 2.0.
- *       Redirige al usuario a la página de login de Google.
- *     responses:
- *       302:
- *         description: Redirección a Google para autenticación
- */
-router.get(
-  "/google",
-  passport.authenticate("google", {
-    scope: ["profile", "email"],
-  })
-);
-
-/**
- * @swagger
  * /api/auth/callback:
  *   get:
  *     summary: Callback de Google OAuth
@@ -56,6 +36,7 @@ router.get(
 router.get(
   "/callback",
   passport.authenticate("google", {
+    scope: ["profile", "email"],
     failureRedirect: `/api/auth/failure`,
     failureMessage: true,
     session: false,
@@ -105,7 +86,7 @@ router.get("/me", authenticateRequest, getCurrentUser);
  *     tags: [Authentication]
  *     description: |
  *       Genera un nuevo JWT usando el refresh token almacenado en cookies.
- *       
+ *
  *       **Rate Limiting:** 5 intentos cada 15 minutos
  *     responses:
  *       200:
