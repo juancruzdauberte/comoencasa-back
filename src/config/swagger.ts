@@ -1,6 +1,7 @@
 import swaggerJSDoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 import { Express } from "express";
+import { authenticateRequest } from "../middlewares/authenticateRequest";
 
 const options: swaggerJSDoc.Options = {
   definition: {
@@ -49,7 +50,8 @@ const options: swaggerJSDoc.Options = {
     tags: [
       {
         name: "Authentication",
-        description: "Endpoints de autenticación y autorización con Google OAuth 2.0",
+        description:
+          "Endpoints de autenticación y autorización con Google OAuth 2.0",
       },
       {
         name: "Products",
@@ -130,28 +132,28 @@ const options: swaggerJSDoc.Options = {
             id: {
               type: "integer",
               description: "ID único del producto",
-              example: 1
+              example: 1,
             },
             nombre: {
               type: "string",
               description: "Nombre del producto",
-              example: "Empanada de Carne"
+              example: "Empanada de Carne",
             },
             categoria_id: {
               type: "integer",
               description: "ID de la categoría",
-              example: 1
+              example: 1,
             },
             precio: {
               type: "number",
               description: "Precio del producto",
-              example: 300.50
+              example: 300.5,
             },
             disponible: {
               type: "boolean",
               description: "Disponibilidad del producto",
-              default: true
-            }
+              default: true,
+            },
           },
         },
 
@@ -162,20 +164,20 @@ const options: swaggerJSDoc.Options = {
             id: {
               type: "integer",
               description: "ID único de la categoría",
-              example: 1
+              example: 1,
             },
             nombre: {
               type: "string",
               description: "Nombre de la categoría",
-              example: "Empanadas"
+              example: "Empanadas",
             },
             productos: {
               type: "array",
               description: "Lista de productos en esta categoría",
               items: {
-                $ref: "#/components/schemas/Product"
-              }
-            }
+                $ref: "#/components/schemas/Product",
+              },
+            },
           },
         },
 
@@ -187,66 +189,72 @@ const options: swaggerJSDoc.Options = {
             id: {
               type: "integer",
               description: "ID único del pedido",
-              example: 1
+              example: 1,
             },
             cliente_id: {
               type: "integer",
               description: "ID del cliente",
-              example: 1
+              example: 1,
             },
             estado: {
               type: "string",
-              enum: ["pendiente", "preparando", "enviando", "entregado", "cancelado"],
+              enum: [
+                "pendiente",
+                "preparando",
+                "enviando",
+                "entregado",
+                "cancelado",
+              ],
               description: "Estado del pedido",
-              example: "preparando"
+              example: "preparando",
             },
             domicilio: {
               type: "string",
               description: "Dirección de entrega",
-              example: "Av. Siempre Viva 123"
+              example: "Av. Siempre Viva 123",
             },
             hora_entrega: {
               type: "string",
               format: "time",
               description: "Hora estimada de entrega",
-              example: "18:30"
+              example: "18:30",
             },
             productos: {
               type: "array",
               description: "Lista de productos en el pedido",
               items: {
-                $ref: "#/components/schemas/OrderProduct"
-              }
+                $ref: "#/components/schemas/OrderProduct",
+              },
             },
             monto_total: {
               type: "number",
               description: "Monto total del pedido",
-              example: 2500.50
+              example: 2500.5,
             },
             metodo_pago: {
               type: "string",
               enum: ["efectivo", "transferencia"],
               description: "Método de pago",
-              example: "efectivo"
+              example: "efectivo",
             },
             fecha_pedido: {
               type: "string",
               format: "date-time",
               description: "Fecha y hora del pedido",
-              example: "2025-10-04T15:30:00Z"
+              example: "2025-10-04T15:30:00Z",
             },
             fecha_pago: {
               type: "string",
               format: "date-time",
               description: "Fecha y hora del pago",
-              nullable: true
+              nullable: true,
             },
             observaciones: {
               type: "string",
               description: "Observaciones adicionales",
               nullable: true,
-              example: "Sin cebolla"
-            }
+              example: "Sin cebolla",
+            },
           },
         },
 
@@ -257,24 +265,24 @@ const options: swaggerJSDoc.Options = {
             producto_id: {
               type: "integer",
               description: "ID del producto",
-              example: 1
+              example: 1,
             },
             cantidad: {
               type: "integer",
               description: "Cantidad del producto",
               minimum: 1,
-              example: 3
+              example: 3,
             },
             precio_unitario: {
               type: "number",
               description: "Precio unitario al momento del pedido",
-              example: 300.50
+              example: 300.5,
             },
             subtotal: {
               type: "number",
               description: "Subtotal (precio × cantidad)",
-              example: 901.50
-            }
+              example: 901.5,
+            },
           },
         },
 
@@ -286,38 +294,38 @@ const options: swaggerJSDoc.Options = {
             id: {
               type: "integer",
               description: "ID único del cliente",
-              example: 1
+              example: 1,
             },
             nombre: {
               type: "string",
               description: "Nombre del cliente",
-              example: "Juan"
+              example: "Juan",
             },
             apellido: {
               type: "string",
               description: "Apellido del cliente",
-              example: "Pérez"
+              example: "Pérez",
             },
             telefono: {
               type: "string",
               description: "Teléfono del cliente (formato internacional)",
-              example: "+5491123456789"
+              example: "+5491123456789",
             },
             direcciones: {
               type: "array",
               description: "Direcciones guardadas del cliente",
               items: {
-                type: "string"
+                type: "string",
               },
-              example: ["Av. Siempre Viva 123", "Calle Falsa 123"]
+              example: ["Av. Siempre Viva 123", "Calle Falsa 123"],
             },
             historial_pedidos: {
               type: "array",
               description: "IDs de pedidos anteriores",
               items: {
-                type: "integer"
-              }
-            }
+                type: "integer",
+              },
+            },
           },
         },
 
@@ -328,27 +336,27 @@ const options: swaggerJSDoc.Options = {
             periodo: {
               type: "string",
               description: "Período del reporte (hoy/mensual)",
-              example: "2025-10"
+              example: "2025-10",
             },
             total_ventas: {
               type: "number",
               description: "Monto total de ventas",
-              example: 150000.75
+              example: 150000.75,
             },
             efectivo: {
               type: "number",
               description: "Total en efectivo",
-              example: 75000.25
+              example: 75000.25,
             },
             transferencias: {
               type: "number",
               description: "Total en transferencias",
-              example: 75000.50
+              example: 75000.5,
             },
             cantidad_pedidos: {
               type: "integer",
               description: "Cantidad total de pedidos",
-              example: 50
+              example: 50,
             },
             delivery: {
               type: "object",
@@ -356,15 +364,15 @@ const options: swaggerJSDoc.Options = {
                 monto_cobrado: {
                   type: "number",
                   description: "Monto total cobrado por delivery",
-                  example: 5000.00
+                  example: 5000.0,
                 },
                 monto_a_pagar: {
                   type: "number",
                   description: "Monto a pagar al servicio de delivery",
-                  example: 2500.00
-                }
-              }
-            }
+                  example: 2500.0,
+                },
+              },
+            },
           },
         },
 
@@ -375,13 +383,13 @@ const options: swaggerJSDoc.Options = {
             delivery_fee: {
               type: "number",
               description: "Tarifa de delivery",
-              example: 500.00
+              example: 500.0,
             },
             min_order_amount: {
               type: "number",
               description: "Monto mínimo de pedido",
-              example: 3000.00
-            }
+              example: 3000.0,
+            },
           },
         },
 
@@ -393,18 +401,18 @@ const options: swaggerJSDoc.Options = {
             error: {
               type: "string",
               description: "Mensaje de error",
-              example: "Recurso no encontrado"
+              example: "Recurso no encontrado",
             },
             statusCode: {
               type: "integer",
               description: "Código de estado HTTP",
-              example: 404
+              example: 404,
             },
             details: {
               type: "object",
               description: "Detalles adicionales del error (opcional)",
-              nullable: true
-            }
+              nullable: true,
+            },
           },
         },
 
@@ -415,12 +423,12 @@ const options: swaggerJSDoc.Options = {
             error: {
               type: "string",
               description: "Mensaje de error general",
-              example: "Error de validación"
+              example: "Error de validación",
             },
             statusCode: {
               type: "integer",
               description: "Código de estado HTTP",
-              example: 400
+              example: 400,
             },
             validationErrors: {
               type: "array",
@@ -431,18 +439,18 @@ const options: swaggerJSDoc.Options = {
                   field: {
                     type: "string",
                     description: "Campo que falló la validación",
-                    example: "telefono"
+                    example: "telefono",
                   },
                   message: {
                     type: "string",
                     description: "Mensaje de error específico",
-                    example: "Formato de teléfono inválido"
-                  }
-                }
-              }
-            }
+                    example: "Formato de teléfono inválido",
+                  },
+                },
+              },
+            },
           },
-        }
+        },
       },
     },
   },
@@ -453,7 +461,7 @@ const swaggerSpec = swaggerJSDoc(options);
 
 export function setupSwagger(app: Express) {
   const swaggerUiOptions: swaggerUi.SwaggerUiOptions = {
-    customCss: '.swagger-ui .topbar { display: none }',
+    customCss: ".swagger-ui .topbar { display: none }",
     customSiteTitle: "Como en Casa API Documentation",
     swaggerOptions: {
       persistAuthorization: true,
@@ -465,7 +473,7 @@ export function setupSwagger(app: Express) {
     },
   };
 
-  app.use("/api/docs", swaggerUi.serve);
+  app.use("/api/docs", authenticateRequest, swaggerUi.serve);
   app.get("/api/docs", swaggerUi.setup(swaggerSpec, swaggerUiOptions));
 
   app.get("/api/docs.json", (req, res) => {
