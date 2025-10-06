@@ -2,7 +2,6 @@
 .env
 node_modules
 package-lock.json
-entrypoint.sh
 .dockerignore
 logs/*.log
 SECURITY_IMPROVEMENTS.md

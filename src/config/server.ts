@@ -29,9 +29,10 @@ app.use(passport.initialize());
 configurePassport();
 app.use(compression());
 
-// Setup Swagger Documentation
+// Configurar Swagger
 setupSwagger(app);
 
+// Rutas de la API
 app.use("/api/auth", authRoutes);
 app.use("/api/products", authenticateRequest, productsRoutes);
 app.use("/api/orders", authenticateRequest, ordersRoutes);

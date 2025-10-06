@@ -1,449 +1,477 @@
-import swaggerJsdoc from 'swagger-jsdoc';
-import { Express } from 'express';
-import swaggerUi from 'swagger-ui-express';
+import swaggerJSDoc from "swagger-jsdoc";
+import swaggerUi from "swagger-ui-express";
+import { Express } from "express";
 
-const options: swaggerJsdoc.Options = {
+const options: swaggerJSDoc.Options = {
   definition: {
-    openapi: '3.0.0',
+    openapi: "3.0.0",
     info: {
-      title: 'Como en Casa API',
-      version: '1.0.0',
+      title: "Como en Casa API Documentation",
+      version: "1.0.0",
       description: `
-        API REST completa para la gestión de pedidos, productos, clientes y finanzas del negocio "Como en Casa".
-        
-        ## Características principales:
-        - **Autenticación OAuth 2.0** con Google
-        - **JWT Tokens** para acceso y refresh
-        - **Gestión de Pedidos** (CRUD completo)
-        - **Gestión de Productos y Categorías**
-        - **Administración de Clientes**
-        - **Reportes Financieros** detallados
+        Documentación oficial de la API de Como en Casa.
         
         ## Autenticación
-        La API utiliza JWT (JSON Web Tokens) para autenticación. Existen dos tipos de tokens:
-        - **Access Token**: Válido por 5 minutos, se envía en el header Authorization
-        - **Refresh Token**: Válido por 7 días, se almacena en cookie httpOnly
+        La API utiliza múltiples capas de seguridad:
+        - 🔐 **OAuth 2.0 con Google** para el login inicial
+        - 🎫 **JWT** para autorización de requests (válido por 5 minutos)
+        - 🔄 **Refresh Token** en cookies httpOnly (válido por 7 días)
         
-        Para autenticarse, usa el flujo OAuth de Google y luego incluye el access token en tus requests:
-        \`\`\`
-        Authorization: Bearer <tu_access_token>
-        \`\`\`
+        ### Flujo de Autenticación:
+        1. El usuario inicia el flujo OAuth con Google
+        2. Después del login exitoso, se genera un JWT y un refresh token
+        3. El JWT se usa en el header Authorization: \`Bearer <token>\`
+        4. El refresh token se almacena automáticamente en una cookie segura
+        5. Cuando el JWT expira, usar /api/auth/refresh para obtener uno nuevo
+
+        ## Características Adicionales
+        - 📦 **Gestión de Productos y Categorías**
+        - 🛒 **Sistema de Pedidos**
+        - 👥 **Gestión de Clientes**
+        - 💰 **Reportes Financieros**
+        - 🚚 **Control de Delivery**
       `,
       contact: {
-        name: 'Soporte Como en Casa',
-        email: 'soporte@comoencasa.com'
+        name: "Soporte Como en Casa",
+        email: "soporte@comoencasa.com",
       },
-      license: {
-        name: 'ISC',
-      }
     },
     servers: [
       {
-        url: 'http://localhost:3000',
-        description: 'Servidor de Desarrollo'
+        url: "http://localhost:3000",
+        description: "Servidor de Desarrollo",
       },
       {
-        url: 'https://api.comoencasa.com',
-        description: 'Servidor de Producción'
-      }
+        url: "https://api.comoencasa.com",
+        description: "Servidor de Producción",
+      },
     ],
     tags: [
       {
-        name: 'Authentication',
-        description: 'Endpoints de autenticación y autorización con Google OAuth 2.0'
+        name: "Authentication",
+        description: "Endpoints de autenticación y autorización con Google OAuth 2.0",
       },
       {
-        name: 'Products',
-        description: 'Gestión de productos y categorías'
+        name: "Products",
+        description: "Gestión de productos y categorías",
       },
       {
-        name: 'Orders',
-        description: 'Gestión completa de pedidos (crear, listar, modificar, eliminar)'
+        name: "Orders",
+        description: "Gestión de pedidos",
       },
       {
-        name: 'Clients',
-        description: 'Consulta de información de clientes'
+        name: "Clients",
+        description: "Gestión de clientes",
       },
       {
-        name: 'Finances',
-        description: 'Reportes financieros y estadísticas de ventas'
-      }
+        name: "Finances",
+        description: "Reportes financieros",
+      },
     ],
     components: {
       securitySchemes: {
-        bearerAuth: {
-          type: 'http',
-          scheme: 'bearer',
-          bearerFormat: 'JWT',
-          description: 'JWT Access Token obtenido después del login con Google'
+        BearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+          description: "Ingresa tu JWT token",
         },
-        cookieAuth: {
-          type: 'apiKey',
-          in: 'cookie',
-          name: 'refreshToken',
-          description: 'Refresh Token almacenado en cookie httpOnly'
-        }
+        GoogleAuth: {
+          type: "oauth2",
+          flows: {
+            implicit: {
+              authorizationUrl: "https://accounts.google.com/o/oauth2/v2/auth",
+              scopes: {
+                "profile email": "Ver perfil y email",
+              },
+            },
+          },
+        },
       },
       schemas: {
-        Error: {
-          type: 'object',
+        // Auth Schemas
+        AuthResponse: {
+          type: "object",
           properties: {
-            error: {
-              type: 'string',
-              description: 'Mensaje de error descriptivo'
+            accessToken: {
+              type: "string",
+              description: "JWT token para autenticación",
             },
-            statusCode: {
-              type: 'number',
-              description: 'Código de estado HTTP'
-            }
-          }
+            user: {
+              type: "object",
+              properties: {
+                email: {
+                  type: "string",
+                  description: "Email del usuario",
+                },
+                name: {
+                  type: "string",
+                  description: "Nombre completo del usuario",
+                },
+                avatar: {
+                  type: "string",
+                  description: "URL del avatar del usuario",
+                },
+                role: {
+                  type: "string",
+                  enum: ["admin", "user"],
+                  description: "Rol del usuario",
+                },
+              },
+            },
+          },
         },
+
+        // Product Schemas
         Product: {
-          type: 'object',
+          type: "object",
+          required: ["nombre", "categoria_id", "precio"],
           properties: {
             id: {
-              type: 'integer',
-              description: 'ID único del producto',
+              type: "integer",
+              description: "ID único del producto",
               example: 1
             },
             nombre: {
-              type: 'string',
-              description: 'Nombre del producto',
-              example: 'Empanada de Carne'
+              type: "string",
+              description: "Nombre del producto",
+              example: "Empanada de Carne"
             },
             categoria_id: {
-              type: 'integer',
-              description: 'ID de la categoría a la que pertenece',
+              type: "integer",
+              description: "ID de la categoría",
               example: 1
             },
-            categoria: {
-              type: 'string',
-              description: 'Nombre de la categoría',
-              example: 'Empanadas'
+            precio: {
+              type: "number",
+              description: "Precio del producto",
+              example: 300.50
+            },
+            disponible: {
+              type: "boolean",
+              description: "Disponibilidad del producto",
+              default: true
             }
-          }
+          },
         },
+
         Category: {
-          type: 'object',
+          type: "object",
+          required: ["nombre"],
           properties: {
             id: {
-              type: 'integer',
-              description: 'ID único de la categoría',
+              type: "integer",
+              description: "ID único de la categoría",
               example: 1
             },
             nombre: {
-              type: 'string',
-              description: 'Nombre de la categoría',
-              example: 'Empanadas'
+              type: "string",
+              description: "Nombre de la categoría",
+              example: "Empanadas"
             },
             productos: {
-              type: 'array',
-              description: 'Lista de productos en esta categoría',
+              type: "array",
+              description: "Lista de productos en esta categoría",
               items: {
-                $ref: '#/components/schemas/Product'
+                $ref: "#/components/schemas/Product"
               }
             }
-          }
+          },
         },
-        OrderProduct: {
-          type: 'object',
-          required: ['producto_id', 'cantidad'],
-          properties: {
-            producto_id: {
-              type: 'integer',
-              description: 'ID del producto',
-              example: 1
-            },
-            cantidad: {
-              type: 'integer',
-              minimum: 1,
-              description: 'Cantidad del producto',
-              example: 12
-            }
-          }
-        },
-        OrderProductDetail: {
-          type: 'object',
-          properties: {
-            producto_id: {
-              type: 'integer',
-              description: 'ID del producto',
-              example: 1
-            },
-            nombre: {
-              type: 'string',
-              description: 'Nombre del producto',
-              example: 'Empanada de Carne'
-            },
-            cantidad: {
-              type: 'integer',
-              description: 'Cantidad en el pedido',
-              example: 12
-            },
-            categoria: {
-              type: 'string',
-              description: 'Categoría del producto',
-              example: 'Empanadas'
-            }
-          }
-        },
+
+        // Order Schemas
         Order: {
-          type: 'object',
+          type: "object",
+          required: ["cliente_id", "productos", "domicilio"],
           properties: {
             id: {
-              type: 'integer',
-              description: 'ID único del pedido',
+              type: "integer",
+              description: "ID único del pedido",
               example: 1
             },
-            domicilio: {
-              type: 'string',
-              description: 'Dirección de entrega',
-              example: 'Av. Siempre Viva 123'
-            },
-            nombre_cliente: {
-              type: 'string',
-              description: 'Nombre del cliente',
-              example: 'Juan'
-            },
-            apellido_cliente: {
-              type: 'string',
-              description: 'Apellido del cliente',
-              example: 'Pérez'
-            },
-            telefono_cliente: {
-              type: 'string',
-              description: 'Teléfono del cliente',
-              example: '+5491123456789'
-            },
-            fecha_pedido: {
-              type: 'string',
-              format: 'date-time',
-              description: 'Fecha y hora en que se creó el pedido',
-              example: '2024-01-15T14:30:00Z'
-            },
-            hora_entrega: {
-              type: 'string',
-              format: 'time',
-              nullable: true,
-              description: 'Hora estimada de entrega',
-              example: '18:30'
+            cliente_id: {
+              type: "integer",
+              description: "ID del cliente",
+              example: 1
             },
             estado: {
-              type: 'string',
-              enum: ['preparando', 'listo', 'entregado', 'cancelado'],
-              description: 'Estado actual del pedido',
-              example: 'preparando'
-            },
-            monto_pago: {
-              type: 'number',
-              format: 'float',
-              nullable: true,
-              description: 'Monto total del pedido',
-              example: 5400.50
-            },
-            fecha_pago: {
-              type: 'string',
-              format: 'date-time',
-              nullable: true,
-              description: 'Fecha en que se pagó el pedido',
-              example: '2024-01-15T19:00:00Z'
-            },
-            metodo_pago: {
-              type: 'string',
-              enum: ['efectivo', 'transferencia'],
-              nullable: true,
-              description: 'Método de pago utilizado',
-              example: 'transferencia'
-            },
-            observacion: {
-              type: 'string',
-              nullable: true,
-              description: 'Observaciones o comentarios adicionales',
-              example: 'Sin cebolla'
-            },
-            productos: {
-              type: 'array',
-              description: 'Lista de productos en el pedido',
-              items: {
-                $ref: '#/components/schemas/OrderProductDetail'
-              }
-            }
-          }
-        },
-        CreateOrderRequest: {
-          type: 'object',
-          required: ['nombre_cliente', 'apellido_cliente', 'telefono_cliente', 'domicilio', 'productos'],
-          properties: {
-            nombre_cliente: {
-              type: 'string',
-              description: 'Nombre del cliente',
-              example: 'Juan'
-            },
-            apellido_cliente: {
-              type: 'string',
-              description: 'Apellido del cliente',
-              example: 'Pérez'
-            },
-            telefono_cliente: {
-              type: 'string',
-              description: 'Teléfono del cliente (formato internacional)',
-              example: '+5491123456789'
+              type: "string",
+              enum: ["pendiente", "preparando", "enviando", "entregado", "cancelado"],
+              description: "Estado del pedido",
+              example: "preparando"
             },
             domicilio: {
-              type: 'string',
-              description: 'Dirección de entrega',
-              example: 'Av. Siempre Viva 123'
+              type: "string",
+              description: "Dirección de entrega",
+              example: "Av. Siempre Viva 123"
             },
             hora_entrega: {
-              type: 'string',
-              format: 'time',
-              description: 'Hora estimada de entrega (HH:MM)',
-              example: '18:30'
-            },
-            observacion: {
-              type: 'string',
-              description: 'Observaciones adicionales',
-              example: 'Sin cebolla'
-            },
-            metodo_pago: {
-              type: 'string',
-              enum: ['efectivo', 'transferencia'],
-              description: 'Método de pago',
-              example: 'transferencia'
-            },
-            monto: {
-              type: 'number',
-              format: 'float',
-              description: 'Monto total del pedido',
-              example: 5400.50
+              type: "string",
+              format: "time",
+              description: "Hora estimada de entrega",
+              example: "18:30"
             },
             productos: {
-              type: 'array',
-              description: 'Lista de productos para el pedido',
+              type: "array",
+              description: "Lista de productos en el pedido",
               items: {
-                $ref: '#/components/schemas/OrderProduct'
+                $ref: "#/components/schemas/OrderProduct"
               }
+            },
+            monto_total: {
+              type: "number",
+              description: "Monto total del pedido",
+              example: 2500.50
+            },
+            metodo_pago: {
+              type: "string",
+              enum: ["efectivo", "transferencia"],
+              description: "Método de pago",
+              example: "efectivo"
+            },
+            fecha_pedido: {
+              type: "string",
+              format: "date-time",
+              description: "Fecha y hora del pedido",
+              example: "2025-10-04T15:30:00Z"
+            },
+            fecha_pago: {
+              type: "string",
+              format: "date-time",
+              description: "Fecha y hora del pago",
+              nullable: true
+            },
+            observaciones: {
+              type: "string",
+              description: "Observaciones adicionales",
+              nullable: true,
+              example: "Sin cebolla"
             }
-          }
+          },
         },
-        Client: {
-          type: 'object',
+
+        OrderProduct: {
+          type: "object",
+          required: ["producto_id", "cantidad"],
           properties: {
+            producto_id: {
+              type: "integer",
+              description: "ID del producto",
+              example: 1
+            },
+            cantidad: {
+              type: "integer",
+              description: "Cantidad del producto",
+              minimum: 1,
+              example: 3
+            },
+            precio_unitario: {
+              type: "number",
+              description: "Precio unitario al momento del pedido",
+              example: 300.50
+            },
+            subtotal: {
+              type: "number",
+              description: "Subtotal (precio × cantidad)",
+              example: 901.50
+            }
+          },
+        },
+
+        // Client Schemas
+        Client: {
+          type: "object",
+          required: ["nombre", "apellido", "telefono"],
+          properties: {
+            id: {
+              type: "integer",
+              description: "ID único del cliente",
+              example: 1
+            },
             nombre: {
-              type: 'string',
-              description: 'Nombre del cliente',
-              example: 'Juan'
+              type: "string",
+              description: "Nombre del cliente",
+              example: "Juan"
             },
             apellido: {
-              type: 'string',
-              description: 'Apellido del cliente',
-              example: 'Pérez'
+              type: "string",
+              description: "Apellido del cliente",
+              example: "Pérez"
+            },
+            telefono: {
+              type: "string",
+              description: "Teléfono del cliente (formato internacional)",
+              example: "+5491123456789"
+            },
+            direcciones: {
+              type: "array",
+              description: "Direcciones guardadas del cliente",
+              items: {
+                type: "string"
+              },
+              example: ["Av. Siempre Viva 123", "Calle Falsa 123"]
+            },
+            historial_pedidos: {
+              type: "array",
+              description: "IDs de pedidos anteriores",
+              items: {
+                type: "integer"
+              }
             }
-          }
+          },
         },
-        FinanceAmount: {
-          type: 'object',
+
+        // Finance Schemas
+        FinanceReport: {
+          type: "object",
           properties: {
-            monto: {
-              type: 'number',
-              format: 'float',
-              description: 'Monto total',
-              example: 125450.75
+            periodo: {
+              type: "string",
+              description: "Período del reporte (hoy/mensual)",
+              example: "2025-10"
+            },
+            total_ventas: {
+              type: "number",
+              description: "Monto total de ventas",
+              example: 150000.75
+            },
+            efectivo: {
+              type: "number",
+              description: "Total en efectivo",
+              example: 75000.25
+            },
+            transferencias: {
+              type: "number",
+              description: "Total en transferencias",
+              example: 75000.50
+            },
+            cantidad_pedidos: {
+              type: "integer",
+              description: "Cantidad total de pedidos",
+              example: 50
+            },
+            delivery: {
+              type: "object",
+              properties: {
+                monto_cobrado: {
+                  type: "number",
+                  description: "Monto total cobrado por delivery",
+                  example: 5000.00
+                },
+                monto_a_pagar: {
+                  type: "number",
+                  description: "Monto a pagar al servicio de delivery",
+                  example: 2500.00
+                }
+              }
             }
-          }
+          },
+        },
+
+        FinanceParams: {
+          type: "object",
+          required: ["delivery_fee", "min_order_amount"],
+          properties: {
+            delivery_fee: {
+              type: "number",
+              description: "Tarifa de delivery",
+              example: 500.00
+            },
+            min_order_amount: {
+              type: "number",
+              description: "Monto mínimo de pedido",
+              example: 3000.00
+            }
+          },
+        },
+
+        // Error Schemas
+        Error: {
+          type: "object",
+          required: ["error", "statusCode"],
+          properties: {
+            error: {
+              type: "string",
+              description: "Mensaje de error",
+              example: "Recurso no encontrado"
+            },
+            statusCode: {
+              type: "integer",
+              description: "Código de estado HTTP",
+              example: 404
+            },
+            details: {
+              type: "object",
+              description: "Detalles adicionales del error (opcional)",
+              nullable: true
+            }
+          },
+        },
+
+        ValidationError: {
+          type: "object",
+          required: ["error", "statusCode", "validationErrors"],
+          properties: {
+            error: {
+              type: "string",
+              description: "Mensaje de error general",
+              example: "Error de validación"
+            },
+            statusCode: {
+              type: "integer",
+              description: "Código de estado HTTP",
+              example: 400
+            },
+            validationErrors: {
+              type: "array",
+              description: "Lista de errores de validación",
+              items: {
+                type: "object",
+                properties: {
+                  field: {
+                    type: "string",
+                    description: "Campo que falló la validación",
+                    example: "telefono"
+                  },
+                  message: {
+                    type: "string",
+                    description: "Mensaje de error específico",
+                    example: "Formato de teléfono inválido"
+                  }
+                }
+              }
+            }
+          },
         }
       },
-      responses: {
-        UnauthorizedError: {
-          description: 'Token de acceso inválido, expirado o no proporcionado',
-          content: {
-            'application/json': {
-              schema: {
-                $ref: '#/components/schemas/Error'
-              },
-              example: {
-                error: 'Token no válido',
-                statusCode: 401
-              }
-            }
-          }
-        },
-        ForbiddenError: {
-          description: 'No tienes permisos suficientes para acceder a este recurso',
-          content: {
-            'application/json': {
-              schema: {
-                $ref: '#/components/schemas/Error'
-              },
-              example: {
-                error: 'Acceso denegado',
-                statusCode: 403
-              }
-            }
-          }
-        },
-        NotFoundError: {
-          description: 'El recurso solicitado no fue encontrado',
-          content: {
-            'application/json': {
-              schema: {
-                $ref: '#/components/schemas/Error'
-              },
-              example: {
-                error: 'Recurso no encontrado',
-                statusCode: 404
-              }
-            }
-          }
-        },
-        BadRequestError: {
-          description: 'La solicitud contiene datos inválidos o incompletos',
-          content: {
-            'application/json': {
-              schema: {
-                $ref: '#/components/schemas/Error'
-              },
-              example: {
-                error: 'Datos inválidos',
-                statusCode: 400
-              }
-            }
-          }
-        },
-        InternalServerError: {
-          description: 'Error interno del servidor',
-          content: {
-            'application/json': {
-              schema: {
-                $ref: '#/components/schemas/Error'
-              },
-              example: {
-                error: 'Error interno del servidor',
-                statusCode: 500
-              }
-            }
-          }
-        }
-      }
-    }
+    },
   },
-  apis: ['./src/routes/*.ts', './src/routes/*.js']
+  apis: ["./src/routes/*.ts"],
 };
 
-const swaggerSpec = swaggerJsdoc(options);
+const swaggerSpec = swaggerJSDoc(options);
 
 export function setupSwagger(app: Express) {
-  // Swagger UI
-  app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  const swaggerUiOptions: swaggerUi.SwaggerUiOptions = {
     customCss: '.swagger-ui .topbar { display: none }',
-    customSiteTitle: 'Como en Casa API Docs',
-  }));
+    customSiteTitle: "Como en Casa API Documentation",
+    swaggerOptions: {
+      persistAuthorization: true,
+      displayRequestDuration: true,
+      defaultModelsExpandDepth: 3,
+      defaultModelExpandDepth: 3,
+      filter: true,
+      docExpansion: "none",
+    },
+  };
 
-  // JSON endpoint
-  app.get('/api/docs.json', (req, res) => {
-    res.setHeader('Content-Type', 'application/json');
+  app.use("/api/docs", swaggerUi.serve);
+  app.get("/api/docs", swaggerUi.setup(swaggerSpec, swaggerUiOptions));
+
+  app.get("/api/docs.json", (req, res) => {
+    res.setHeader("Content-Type", "application/json");
     res.send(swaggerSpec);
   });
 
-  console.log('📚 Swagger docs available at /api/docs');
+  console.log("📚 Documentación Swagger disponible en /api/docs");
 }

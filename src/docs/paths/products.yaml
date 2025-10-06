@@ -1,0 +1,160 @@
+/api/products/categorys:
+  get:
+    summary: Obtener todas las categorías con sus productos
+    description: Retorna la lista de todas las categorías y sus productos asociados
+    tags: [Products]
+    security:
+      - bearerAuth: []
+    responses:
+      200:
+        description: Lista de categorías con productos
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Category'
+
+/api/products:
+  get:
+    summary: Obtener productos por categoría
+    description: Retorna la lista de productos filtrados por categoría
+    tags: [Products]
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: query
+        name: category
+        schema:
+          type: string
+        description: ID o nombre de la categoría para filtrar
+    responses:
+      200:
+        description: Lista de productos
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Product'
+  
+  post:
+    summary: Crear un nuevo producto
+    description: Crea un nuevo producto en una categoría existente
+    tags: [Products]
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [nombre, categoria_id]
+            properties:
+              nombre:
+                type: string
+                description: Nombre del producto
+              categoria_id:
+                type: integer
+                description: ID de la categoría
+    responses:
+      201:
+        description: Producto creado exitosamente
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Product'
+      400:
+        $ref: '#/components/responses/BadRequestError'
+
+/api/products/{pid}:
+  get:
+    summary: Obtener producto por ID
+    description: Retorna los detalles de un producto específico
+    tags: [Products]
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: path
+        name: pid
+        required: true
+        schema:
+          type: integer
+        description: ID del producto
+    responses:
+      200:
+        description: Detalles del producto
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Product'
+      404:
+        $ref: '#/components/responses/NotFoundError'
+  
+  delete:
+    summary: Eliminar un producto
+    description: Elimina un producto existente
+    tags: [Products]
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: path
+        name: pid
+        required: true
+        schema:
+          type: integer
+        description: ID del producto
+    responses:
+      200:
+        description: Producto eliminado exitosamente
+      404:
+        $ref: '#/components/responses/NotFoundError'
+
+/api/products/category:
+  post:
+    summary: Crear una nueva categoría
+    description: Crea una nueva categoría de productos
+    tags: [Products]
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [nombre]
+            properties:
+              nombre:
+                type: string
+                description: Nombre de la categoría
+    responses:
+      201:
+        description: Categoría creada exitosamente
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Category'
+      400:
+        $ref: '#/components/responses/BadRequestError'
+
+/api/products/category/{cid}:
+  delete:
+    summary: Eliminar una categoría
+    description: Elimina una categoría y todos sus productos asociados
+    tags: [Products]
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: path
+        name: cid
+        required: true
+        schema:
+          type: integer
+        description: ID de la categoría
+    responses:
+      200:
+        description: Categoría eliminada exitosamente
+      404:
+        $ref: '#/components/responses/NotFoundError'
