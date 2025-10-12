@@ -3,7 +3,7 @@ import config from "../config/config";
 import { Payload, User } from "../types/types";
 import { ErrorFactory } from "../errors/errorFactory";
 import { generateAccessToken, verifyRefreshToken } from "../utils/utils";
-import { secureLogger } from "../utils/logger";
+import { secureLogger } from "../config/logger";
 
 /**
  * Configuración segura de cookies

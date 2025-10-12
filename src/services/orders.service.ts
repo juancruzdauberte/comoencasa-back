@@ -8,7 +8,7 @@ import {
 import { ErrorFactory } from "../errors/errorFactory";
 import { AppError } from "../errors/errors";
 import { withTransaction, batchInsert } from "../utils/database.utils";
-import { secureLogger } from "../utils/logger";
+import { secureLogger } from "../config/logger";
 
 export class OrderService {
   static async getOrders(

@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { ErrorFactory } from "../errors/errorFactory";
-import { secureLogger } from "../utils/logger";
+import { secureLogger } from "../config/logger";
 import { verifyRefreshToken } from "../utils/utils";
 import { Payload } from "../types/types";
 

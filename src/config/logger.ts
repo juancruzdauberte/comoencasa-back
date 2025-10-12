@@ -1,5 +1,5 @@
 import winston from 'winston';
-import config from '../config/config';
+import config from './config';
 
 const { combine, timestamp, printf, colorize, errors } = winston.format;
 
@@ -48,8 +48,19 @@ export const logger = winston.createLogger({
   exitOnError: false,
 });
 
-// En desarrollo, también mostrar logs en consola con colores
-if (config.NODE_ENV !== 'production') {
+// Logs en consola para desarrollo y producción
+// En producción se usa formato sin colores para mejor compatibilidad con servicios de logging
+if (config.NODE_ENV === 'production') {
+  logger.add(
+    new winston.transports.Console({
+      format: combine(
+        timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+        logFormat
+      ),
+    })
+  );
+} else {
+  // En desarrollo, mostrar logs en consola con colores
   logger.add(
     new winston.transports.Console({
       format: combine(

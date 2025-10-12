@@ -1,6 +1,6 @@
 import { PoolConnection } from "mysql2/promise";
 import { db } from "../db/db";
-import { secureLogger } from "./logger";
+import { secureLogger } from "../config/logger";
 
 export async function withTransaction<T>(
   callback: (conn: PoolConnection) => Promise<T>

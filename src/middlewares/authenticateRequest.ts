@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyAccessToken } from "../utils/utils";
 import { ErrorFactory } from "../errors/errorFactory";
-import { secureLogger } from "../utils/logger";
+import { secureLogger } from "../config/logger";
 import jwt from "jsonwebtoken";
 
 /**

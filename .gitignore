@@ -4,5 +4,4 @@ node_modules
 package-lock.json
 .dockerignore
 logs/*.log
-SECURITY_IMPROVEMENTS.md
-README_CHANGES.md
+*.md
