@@ -13,9 +13,12 @@ import { authenticateRequest } from "../middlewares/authenticateRequest";
 import cookieParser from "cookie-parser";
 import compression from "compression";
 import { setupSwagger } from "../config/swagger";
+import helmet from "helmet";
+import { limiter } from "./limiter";
 
 const app = express();
 
+app.use(helmet());
 app.use(express.urlencoded({ extended: true }));
 app.use(
   cors({
@@ -29,10 +32,9 @@ app.use(passport.initialize());
 configurePassport();
 app.use(compression());
 
-// Configurar Swagger
 setupSwagger(app);
 
-// Rutas de la API
+app.use("/api", limiter);
 app.use("/api/auth", authRoutes);
 app.use("/api/products", authenticateRequest, productsRoutes);
 app.use("/api/orders", authenticateRequest, ordersRoutes);

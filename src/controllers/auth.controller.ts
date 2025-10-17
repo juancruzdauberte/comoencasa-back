@@ -11,8 +11,7 @@ import { secureLogger } from "../config/logger";
 const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: config.NODE_ENV === "production", // Solo HTTPS en producción
-  sameSite: "strict" as const, // Prevenir CSRF
-  path: "/",
+  sameSite: "none" as const, // Prevenir CSRF
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días
 };
 
