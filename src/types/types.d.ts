@@ -23,9 +23,6 @@ type ProductoPedido = {
 export type Pedido = {
   id: number;
   domicilio: string;
-  nombre_cliente: string;
-  apellido_cliente: string;
-  telefono_cliente: string;
   fecha_pedido: string;
   hora_entrega: string | null;
   estado: "preparando" | "listo" | "entregado" | "cancelado";

@@ -52,9 +52,6 @@ export async function createOrder(
 ) {
   try {
     const {
-      nombre_cliente,
-      apellido_cliente,
-      telefono_cliente,
       domicilio,
       hora_entrega,
       observacion,
@@ -64,9 +61,6 @@ export async function createOrder(
     } = req.body;
 
     await OrderService.createOrder(
-      nombre_cliente,
-      apellido_cliente,
-      telefono_cliente,
       domicilio,
       hora_entrega,
       observacion,

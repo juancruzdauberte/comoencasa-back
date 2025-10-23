@@ -10,7 +10,7 @@ import { secureLogger } from "../config/logger";
  */
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: config.NODE_ENV === "production", // Solo HTTPS en producción
+  secure: config.NODE_ENV === "production" ? false : true, // Solo HTTPS en producción
   sameSite: "none" as const, // Prevenir CSRF
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días
 };
@@ -121,12 +121,7 @@ export async function logOut(req: Request, res: Response, next: NextFunction) {
     const userEmail = (req.user as any)?.email;
 
     // Limpiar cookie de refresh token
-    res.clearCookie("refreshToken", {
-      httpOnly: true,
-      secure: config.NODE_ENV === "production",
-      sameSite: "strict",
-      path: "/",
-    });
+    res.clearCookie("refreshToken", COOKIE_OPTIONS);
 
     secureLogger.info("User logged out successfully", {
       email: userEmail,

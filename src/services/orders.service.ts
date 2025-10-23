@@ -65,9 +65,6 @@ export class OrderService {
   }
 
   static async createOrder(
-    customerName: string,
-    customerSurname: string,
-    customerPhone: string,
     address: string,
     deliveryTime: string,
     observation: string,
@@ -96,15 +93,8 @@ export class OrderService {
       try {
         // Crear pedido
         const [res] = await conn.query<RowDataPacket[][]>(
-          "CALL crear_pedido(?,?,?,?,?,?)",
-          [
-            customerName,
-            customerSurname,
-            customerPhone,
-            address,
-            deliveryTime,
-            observation,
-          ]
+          "CALL crear_pedido(?,?,?)",
+          [address, deliveryTime, observation]
         );
 
         const orderId = res[0][0]?.pedido_id;
@@ -136,14 +126,12 @@ export class OrderService {
 
         secureLogger.info("Order created successfully", {
           orderId,
-          customerPhone,
           productsCount: products.length,
         });
 
         return orderId;
       } catch (error) {
         secureLogger.error("Error creating order", error, {
-          customerPhone,
           productsCount: products.length,
         });
         throw error;
