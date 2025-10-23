@@ -5,16 +5,7 @@ import { ErrorFactory } from "../errors/errorFactory";
 import { generateAccessToken, verifyRefreshToken } from "../utils/utils";
 import { secureLogger } from "../config/logger";
 
-/**
- * Configuración segura de cookies
- */
-const COOKIE_OPTIONS = {
-  httpOnly: true,
-  secure: config.NODE_ENV === "production" ? false : true, // Solo HTTPS en producción
-  sameSite: "none" as const, // Prevenir CSRF
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días
-};
-
+// 7 días
 /**
  * Callback de autenticación de Google OAuth
  * Establece refresh token en cookie httpOnly
@@ -45,7 +36,12 @@ export function googleCallback(
     }
 
     // Establecer refresh token en cookie httpOnly
-    res.cookie("refreshToken", refreshToken, COOKIE_OPTIONS);
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: config.NODE_ENV === "production" ? true : false,
+      sameSite: config.NODE_ENV === "production" ? "none" : "lax",
+      maxAge: 3 * 24 * 60 * 60 * 1000,
+    });
 
     secureLogger.info("User authenticated successfully via Google OAuth", {
       email: user.email,
@@ -121,7 +117,7 @@ export async function logOut(req: Request, res: Response, next: NextFunction) {
     const userEmail = (req.user as any)?.email;
 
     // Limpiar cookie de refresh token
-    res.clearCookie("refreshToken", COOKIE_OPTIONS);
+    res.clearCookie("refreshToken");
 
     secureLogger.info("User logged out successfully", {
       email: userEmail,
