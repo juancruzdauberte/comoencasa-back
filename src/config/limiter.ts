@@ -2,7 +2,7 @@ import rateLimit from "express-rate-limit";
 import { secureLogger } from "./logger";
 
 export const limiter = rateLimit({
-  windowMs: 5 * 60 * 1000,
+  windowMs: 3 * 60 * 1000,
   max: 100,
   message: "Demasiadas peticiones, intenta más tarde",
   standardHeaders: true,

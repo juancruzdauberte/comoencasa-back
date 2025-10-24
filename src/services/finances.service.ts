@@ -1,144 +1,45 @@
-import { db } from "../db/db";
-import { ErrorFactory } from "../errors/errorFactory";
-import { AppError } from "../errors/errors";
+import { FinanceRepository } from '../repositories/finance.repository';
 
-export class FinanceClass {
+export class FinanceService {
+  private static financeRepository = new FinanceRepository();
+
   static async getAmountToday() {
-    try {
-      const [res]: any = await db.query("CALL obtener_monto_total_hoy ()");
-      return res[0][0];
-    } catch (error) {
-      if (error instanceof AppError) {
-        throw error;
-      }
-    }
+    return await this.financeRepository.getAmountToday();
   }
 
   static async getTransferAmountToday() {
-    try {
-      const [res]: any = await db.query(
-        "CALL obtener_monto_total_hoy_trans ()"
-      );
-      return res[0][0];
-    } catch (error) {
-      if (error instanceof AppError) {
-        throw error;
-      }
-    }
+    return await this.financeRepository.getTransferAmountToday();
   }
 
   static async getCashAmountToday() {
-    try {
-      const [res]: any = await db.query("CALL obtener_monto_total_hoy_efec ()");
-      return res[0][0];
-    } catch (error) {
-      if (error instanceof AppError) {
-        throw error;
-      }
-    }
+    return await this.financeRepository.getCashAmountToday();
   }
 
   static async getAmountMonthly(month: number, year: number) {
-    try {
-      const [res]: any = await db.query("CALL obtener_monto_total_mes (?, ?)", [
-        month,
-        year,
-      ]);
-      return res[0][0];
-    } catch (error) {
-      if (error instanceof AppError) {
-        throw error;
-      }
-    }
+    return await this.financeRepository.getAmountMonthly(month, year);
   }
 
   static async getTransferAmountMonthly(month: number, year: number) {
-    try {
-      const [res]: any = await db.query(
-        "CALL obtener_monto_total_mes_trans (?, ?)",
-        [month, year]
-      );
-      return res[0][0];
-    } catch (error) {
-      if (error instanceof AppError) {
-        throw error;
-      }
-    }
+    return await this.financeRepository.getTransferAmountMonthly(month, year);
   }
 
   static async getCashAmountMonthly(month: number, year: number) {
-    try {
-      const [res]: any = await db.query(
-        "CALL obtener_monto_total_mes_efec (?, ?)",
-        [month, year]
-      );
-      return res[0][0];
-    } catch (error) {
-      if (error instanceof AppError) {
-        throw error;
-      }
-    }
+    return await this.financeRepository.getCashAmountMonthly(month, year);
   }
 
   static async getDeliveryAmountToPay() {
-    try {
-      const [res]: any = await db.query("CALL calcular_total_motoquero()");
-      return res[0][0];
-    } catch (error) {
-      if (error instanceof AppError) {
-        throw error;
-      }
-    }
+    return await this.financeRepository.getDeliveryAmountToPay();
   }
 
   static async getDeliveryCashAmount() {
-    try {
-      const [res]: any = await db.query(
-        "CALL obtener_monto_total_delivery_hoy_efec()"
-      );
-      return res[0][0];
-    } catch (error) {
-      if (error instanceof AppError) {
-        throw error;
-      }
-    }
+    return await this.financeRepository.getDeliveryCashAmount();
   }
 
   static async getValueFinanceParam(paramName: string) {
-    try {
-      const [res]: any = await db.query(
-        "SELECT pf.valor FROM parametrosfinancieros pf WHERE pf.nombreParametro = ? ",
-        [paramName]
-      );
-      if (!res.length)
-        throw ErrorFactory.badRequest("No se encontro el valor a pagar");
-      return res[0];
-    } catch (error) {
-      if (error instanceof AppError) {
-        throw error;
-      }
-    }
+    return await this.financeRepository.getFinanceParamValue(paramName);
   }
 
   static async updateValueFinanceParam(value: number, paramName: string) {
-    const conn = await db.getConnection();
-    try {
-      await conn.beginTransaction();
-      const [res]: any = await conn.query(
-        "UPDATE parametrosfinancieros pf SET pf.valor = ? WHERE pf.nombreParametro = ?",
-        [value, paramName]
-      );
-      if (!res.length)
-        throw ErrorFactory.badRequest("No se encontro el valor a pagar");
-      await conn.commit();
-      return res[0];
-    } catch (error) {
-      await conn.rollback();
-      if (error instanceof AppError) {
-        throw error;
-      }
-    } finally {
-      conn.release();
-    }
+    await this.financeRepository.updateFinanceParamValue(value, paramName);
   }
 }

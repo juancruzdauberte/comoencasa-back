@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import config from "../config/config";
-import { Payload, User } from "../types/types";
+import { UserDTO, TokenPayloadDTO } from "../dtos/auth.dto";
 import { ErrorFactory } from "../errors/errorFactory";
 import { generateAccessToken, verifyRefreshToken } from "../utils/utils";
 import { secureLogger } from "../config/logger";
@@ -17,7 +17,7 @@ export function googleCallback(
 ) {
   try {
     const { user, accessToken, refreshToken } = req.user as {
-      user: User;
+      user: UserDTO;
       accessToken: string;
       refreshToken: string;
     };
@@ -77,7 +77,7 @@ export async function refreshToken(
 
   try {
     // Verificar refresh token
-    const user = verifyRefreshToken(refreshToken) as Payload;
+    const user = verifyRefreshToken(refreshToken) as TokenPayloadDTO;
 
     // Validar estructura del payload
     if (!user || !user.email || !user.rol) {
@@ -160,7 +160,7 @@ export async function getCurrentUser(
   next: NextFunction
 ) {
   try {
-    const user = req.user as Payload;
+    const user = req.user as TokenPayloadDTO;
 
     if (!user) {
       return next(ErrorFactory.unauthorized("Usuario no autenticado"));

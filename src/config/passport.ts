@@ -18,7 +18,7 @@ export function configurePassport() {
           const avatar = profile.photos?.[0]?.value ?? "";
 
           if (!authenticateEmail) return done(null, false);
-          const user = await UserService.getUser(authenticateEmail);
+          const user = await UserService.getUserByEmail(authenticateEmail);
           if (!user) {
             return done(null, false);
           }

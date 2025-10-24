@@ -1,19 +1,24 @@
-import { db } from "../db/db";
+import { UserRepository } from "../repositories/user.repository";
 import { ErrorFactory } from "../errors/errorFactory";
-import { AppError } from "../errors/errors";
-import { User } from "../types/types";
+import { UserDTO } from "../dtos/auth.dto";
 
-class UserService {
-  static async getUser(email: string): Promise<User> {
-    try {
-      const [res]: any = await db.query("CALL obtener_usuario(?)", [email]);
-      return res[0][0];
-    } catch (error) {
-      if (error instanceof AppError) {
-        throw error;
-      }
-      throw ErrorFactory.internal("Error inesperado del sistema");
+export class UserService {
+  private static userRepository = new UserRepository();
+
+  /**
+   * Obtiene un usuario por su email
+   * @param email Email del usuario
+   * @returns Usuario encontrado
+   * @throws NotFoundError si el usuario no existe
+   */
+  static async getUserByEmail(email: string): Promise<UserDTO> {
+    const user = await this.userRepository.findByEmail(email);
+
+    if (!user) {
+      throw ErrorFactory.notFound(`Usuario con email ${email} no encontrado`);
     }
+
+    return user;
   }
 }
 

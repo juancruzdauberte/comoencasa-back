@@ -1,6 +1,11 @@
-import { NextFunction, Request, Response } from "express";
-import { ProductService } from "../services/products.service";
-import { ErrorFactory } from "../errors/errorFactory";
+import { NextFunction, Request, Response } from 'express';
+import { ProductService } from '../services/products.service';
+import { ErrorFactory } from '../errors/errorFactory';
+import {
+  CreateCategoryRequestDTO,
+  CreateProductRequestDTO,
+  ProductQueryParamsDTO,
+} from '../dtos/product.dto';
 
 export async function getProductsCategory(
   req: Request,
@@ -8,8 +13,8 @@ export async function getProductsCategory(
   next: NextFunction
 ) {
   try {
-    const products = await ProductService.getProductsCategory();
-    res.status(200).json(products);
+    const categories = await ProductService.getProductsCategory();
+    res.status(200).json(categories);
   } catch (error) {
     next(error);
   }
@@ -20,34 +25,36 @@ export async function getProductsByCategory(
   res: Response,
   next: NextFunction
 ) {
-  const { category } = req.query;
-
   try {
+    const { category } = req.query as ProductQueryParamsDTO;
+
     let products;
     if (!category) {
       products = await ProductService.getAllProducts();
-    } else if (typeof category === "string") {
+    } else if (typeof category === 'string') {
       products = await ProductService.getProductsByCategory(category);
     } else {
-      res.status(400).json({ message: "Categoría inválida" });
-      return;
+      throw ErrorFactory.badRequest('Categoría inválida');
     }
+
     res.status(200).json(products);
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error al obtener los productos por categoria" });
-    return;
+    next(error);
   }
 }
 
-export async function getPrductById(
+export async function getProductById(
   req: Request,
   res: Response,
   next: NextFunction
 ) {
-  const { pid } = req.params;
   try {
+    const { pid } = req.params;
+
+    if (!pid) {
+      throw ErrorFactory.badRequest('ID de producto es requerido');
+    }
+
     const product = await ProductService.getProductById(parseInt(pid));
     res.status(200).json(product);
   } catch (error) {
@@ -60,11 +67,19 @@ export async function createProduct(
   res: Response,
   next: NextFunction
 ) {
-  const { nombre, categoria_id } = req.body;
   try {
-    const product = await ProductService.createProduct(nombre, categoria_id);
-    if (!product) throw ErrorFactory.badRequest("Error al crear el producto");
-    res.status(201).json({ message: `Producto creado ${nombre}` });
+    const { nombre, categoria_id } = req.body as CreateProductRequestDTO;
+
+    if (!nombre || !categoria_id) {
+      throw ErrorFactory.badRequest('Nombre y categoría son requeridos');
+    }
+
+    const productId = await ProductService.createProduct(nombre, categoria_id);
+
+    res.status(201).json({
+      message: `Producto creado: ${nombre}`,
+      id: productId,
+    });
   } catch (error) {
     next(error);
   }
@@ -77,8 +92,13 @@ export async function deleteProduct(
 ) {
   try {
     const { pid } = req.params;
+
+    if (!pid) {
+      throw ErrorFactory.badRequest('ID de producto es requerido');
+    }
+
     await ProductService.deleteProduct(Number(pid));
-    res.status(200).json({ message: "Producto eliminado" });
+    res.status(200).json({ message: 'Producto eliminado' });
   } catch (error) {
     next(error);
   }
@@ -91,8 +111,13 @@ export async function deleteCategory(
 ) {
   try {
     const { cid } = req.params;
+
+    if (!cid) {
+      throw ErrorFactory.badRequest('ID de categoría es requerido');
+    }
+
     await ProductService.deleteCategory(Number(cid));
-    res.status(200).json({ message: "Categoria eliminada" });
+    res.status(200).json({ message: 'Categoría eliminada' });
   } catch (error) {
     next(error);
   }
@@ -103,11 +128,19 @@ export async function createCategory(
   res: Response,
   next: NextFunction
 ) {
-  const { nombre } = req.body;
   try {
-    const cateogry = await ProductService.createCategory(nombre);
-    if (!cateogry) throw ErrorFactory.badRequest("Error al crear la categoria");
-    res.status(201).json({ message: `Categoria creada ${cateogry}` });
+    const { nombre } = req.body as CreateCategoryRequestDTO;
+
+    if (!nombre) {
+      throw ErrorFactory.badRequest('Nombre de categoría es requerido');
+    }
+
+    const categoryId = await ProductService.createCategory(nombre);
+
+    res.status(201).json({
+      message: `Categoría creada: ${nombre}`,
+      id: categoryId,
+    });
   } catch (error) {
     next(error);
   }

@@ -7,7 +7,7 @@ import {
   getDeliveryAmountToPay,
   getValueFinanceParam,
   getTransferAmountToday,
-  getTrasnferAmountMonthly,
+  getTransferAmountMonthly,
   updateValueFinanceParam,
   getDeliveryCashAmount,
 } from "../controllers/finances.controller";
@@ -221,6 +221,6 @@ router.get("/monthly/cash", getCashAmountMonthly);
  *             schema:
  *               $ref: '#/components/schemas/FinanceAmount'
  */
-router.get("/monthly/transfer", getTrasnferAmountMonthly);
+router.get("/monthly/transfer", getTransferAmountMonthly);
 
 export default router;

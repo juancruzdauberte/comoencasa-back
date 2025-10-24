@@ -2,7 +2,7 @@ import { Router } from "express";
 import {
   getProductsCategory,
   getProductsByCategory,
-  getPrductById,
+  getProductById,
   createProduct,
   createCategory,
   deleteProduct,
@@ -99,7 +99,7 @@ router.get("/", getProductsByCategory);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get("/:pid", getPrductById);
+router.get("/:pid", getProductById);
 
 /**
  * @swagger
