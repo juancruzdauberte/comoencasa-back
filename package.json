@@ -4,10 +4,12 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev:dev": "tsx watch src/index.ts --mode dev",
-    "dev:prod": "tsx watch src/index.ts --mode prod",
-    "dev": "tsx watch src/index.ts --mode dev",
-    "start": "tsx src/index.ts --mode prod"
+    "dev:dev": "NODE_ENV=development tsx watch src/index.ts --mode dev",
+    "dev:prod": "NODE_ENV=production tsx watch src/index.ts --mode prod",
+    "dev": "NODE_ENV=development tsx watch src/index.ts --mode dev",
+    "start": "NODE_ENV=production node --max-old-space-size=512 dist/index.js",
+    "build": "tsc",
+    "start:optimized": "NODE_ENV=production node --max-old-space-size=512 --optimize-for-size dist/index.js"
   },
   "keywords": [],
   "author": "",

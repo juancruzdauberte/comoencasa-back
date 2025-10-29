@@ -8,4 +8,10 @@ export const db = createPool({
   database: config.DB_NAME,
   port: parseInt(config.DB_PORT!),
   timezone: "-03:00",
+  connectionLimit: 10,
+  queueLimit: 5,
+  connectTimeout: 10000,
+  waitForConnections: true,
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 0,
 }).promise();
