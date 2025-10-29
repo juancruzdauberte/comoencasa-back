@@ -1,6 +1,9 @@
-import { PoolConnection } from 'mysql2/promise';
-import { OrderResponseDTO, ProductCreateOrderDTO } from '../dtos/order.dto';
-import { IBaseRepository, StoredProcedureResultWithTotal } from './repository.interface';
+import { PoolConnection } from "mysql2/promise";
+import { OrderResponseDTO, ProductCreateOrderDTO } from "../dtos/order.dto";
+import {
+  IBaseRepository,
+  StoredProcedureResultWithTotal,
+} from "./repository.interface";
 
 export interface IOrderRepository extends IBaseRepository {
   findAll(
@@ -17,7 +20,8 @@ export interface IOrderRepository extends IBaseRepository {
     observation: string,
     products: ProductCreateOrderDTO[],
     payMethod: string,
-    amount: number
+    amount: number,
+    clientSurname: string
   ): Promise<number>;
 
   addProduct(
@@ -40,7 +44,8 @@ export interface IOrderRepository extends IBaseRepository {
     state: string,
     payMethod: string,
     amount: number,
-    products: ProductCreateOrderDTO[]
+    products: ProductCreateOrderDTO[],
+    clientSurname: string
   ): Promise<void>;
 
   updateProductQuantity(

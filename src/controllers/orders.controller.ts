@@ -1,11 +1,11 @@
-import { NextFunction, Request, Response } from 'express';
-import { OrderService } from '../services/orders.service';
-import { ErrorFactory } from '../errors/errorFactory';
+import { NextFunction, Request, Response } from "express";
+import { OrderService } from "../services/orders.service";
+import { ErrorFactory } from "../errors/errorFactory";
 import {
   CreateOrderRequestDTO,
   OrderQueryParamsDTO,
   UpdateOrderRequestDTO,
-} from '../dtos/order.dto';
+} from "../dtos/order.dto";
 
 export async function getOrders(
   req: Request,
@@ -13,8 +13,12 @@ export async function getOrders(
   next: NextFunction
 ) {
   try {
-    const { filter, limit = 10, page = 1 } = req.query as unknown as OrderQueryParamsDTO;
-    
+    const {
+      filter,
+      limit = 10,
+      page = 1,
+    } = req.query as unknown as OrderQueryParamsDTO;
+
     const parsedLimit = Number(limit);
     const parsedPage = Number(page);
     const offset = (parsedPage - 1) * parsedLimit;
@@ -47,7 +51,7 @@ export async function getOrderById(
     const { oid } = req.params;
 
     if (!oid) {
-      throw ErrorFactory.badRequest('ID de pedido es requerido');
+      throw ErrorFactory.badRequest("ID de pedido es requerido");
     }
 
     const data = await OrderService.getOrderById(parseInt(oid));
@@ -66,10 +70,11 @@ export async function createOrder(
     const {
       domicilio,
       hora_entrega,
-      observacion = '',
+      observacion = "",
       productos,
       monto,
       metodo_pago,
+      apellido_cliente = "",
     } = req.body as CreateOrderRequestDTO;
 
     await OrderService.createOrder(
@@ -78,10 +83,11 @@ export async function createOrder(
       observacion,
       productos,
       metodo_pago,
-      monto
+      monto,
+      apellido_cliente
     );
 
-    res.status(201).json({ message: 'Pedido creado con éxito.' });
+    res.status(201).json({ message: "Pedido creado con éxito." });
   } catch (error) {
     next(error);
   }
@@ -96,7 +102,7 @@ export async function addProductToOrder(
     const { producto_id, pedido_id, cantidad } = req.body;
 
     if (!producto_id || !pedido_id || !cantidad) {
-      throw ErrorFactory.badRequest('Faltan datos requeridos');
+      throw ErrorFactory.badRequest("Faltan datos requeridos");
     }
 
     await OrderService.addProductToOrder(
@@ -105,7 +111,7 @@ export async function addProductToOrder(
       Number(cantidad)
     );
 
-    res.status(200).json({ message: 'Producto agregado al pedido con éxito' });
+    res.status(200).json({ message: "Producto agregado al pedido con éxito" });
   } catch (error) {
     next(error);
   }
@@ -121,11 +127,11 @@ export async function insertOrderDatePay(
 
     const orderId = Number(oid);
     if (!orderId || isNaN(orderId)) {
-      throw ErrorFactory.badRequest('ID de pedido inválido');
+      throw ErrorFactory.badRequest("ID de pedido inválido");
     }
 
     await OrderService.insertOrderDatePay(orderId);
-    res.status(200).json({ message: 'Pedido pagado con éxito' });
+    res.status(200).json({ message: "Pedido pagado con éxito" });
   } catch (error) {
     next(error);
   }
@@ -140,15 +146,12 @@ export async function deleteProductFromOrder(
     const { oid, pid } = req.params;
 
     if (!oid || !pid) {
-      throw ErrorFactory.badRequest('Faltan parámetros requeridos');
+      throw ErrorFactory.badRequest("Faltan parámetros requeridos");
     }
 
-    await OrderService.deleteProductFromOrder(
-      parseInt(oid),
-      parseInt(pid)
-    );
+    await OrderService.deleteProductFromOrder(parseInt(oid), parseInt(pid));
 
-    res.status(200).json({ message: 'Producto eliminado del pedido' });
+    res.status(200).json({ message: "Producto eliminado del pedido" });
   } catch (error) {
     next(error);
   }
@@ -164,7 +167,7 @@ export async function updateProductQuantity(
     const { cantidad } = req.body;
 
     if (!oid || !pid || cantidad === undefined || cantidad === null) {
-      throw ErrorFactory.badRequest('Faltan datos requeridos');
+      throw ErrorFactory.badRequest("Faltan datos requeridos");
     }
 
     await OrderService.updateProductQuantity(
@@ -173,7 +176,7 @@ export async function updateProductQuantity(
       parseInt(cantidad)
     );
 
-    res.status(200).json({ message: 'Cantidad actualizada correctamente' });
+    res.status(200).json({ message: "Cantidad actualizada correctamente" });
   } catch (error) {
     next(error);
   }
@@ -188,7 +191,7 @@ export async function updateOrder(
     const { oid } = req.params;
 
     if (!oid) {
-      throw ErrorFactory.badRequest('ID de pedido no existente');
+      throw ErrorFactory.badRequest("ID de pedido no existente");
     }
 
     const {
@@ -199,6 +202,7 @@ export async function updateOrder(
       estado,
       productos,
       monto,
+      apellido_cliente,
     } = req.body as UpdateOrderRequestDTO;
 
     await OrderService.updateOrder(
@@ -209,10 +213,11 @@ export async function updateOrder(
       estado!,
       metodo_pago!,
       monto!,
-      productos!
+      productos!,
+      apellido_cliente!
     );
 
-    res.status(200).json({ message: 'Pedido actualizado correctamente' });
+    res.status(200).json({ message: "Pedido actualizado correctamente" });
   } catch (error) {
     next(error);
   }
@@ -227,11 +232,11 @@ export async function deleteOrder(
     const { oid } = req.params;
 
     if (!oid) {
-      throw ErrorFactory.badRequest('Error: no existe un pedido con ese ID');
+      throw ErrorFactory.badRequest("Error: no existe un pedido con ese ID");
     }
 
     await OrderService.deleteOrder(parseInt(oid));
-    res.status(200).json({ message: 'Pedido eliminado correctamente' });
+    res.status(200).json({ message: "Pedido eliminado correctamente" });
   } catch (error) {
     next(error);
   }

@@ -3,9 +3,10 @@
 export interface CreateOrderRequestDTO {
   domicilio: string;
   hora_entrega: string;
+  apellido_cliente?: string;
   observacion?: string;
   productos: ProductCreateOrderDTO[];
-  metodo_pago: 'efectivo' | 'transferencia';
+  metodo_pago: "efectivo" | "transferencia";
   monto: number;
 }
 
@@ -17,6 +18,7 @@ export interface UpdateOrderRequestDTO {
   metodo_pago?: PaymentMethod;
   monto?: number;
   productos?: ProductCreateOrderDTO[];
+  apellido_cliente?: string;
 }
 
 export interface AddProductToOrderRequestDTO {
@@ -41,6 +43,7 @@ export interface OrderResponseDTO {
   fecha_pago: string | null;
   metodo_pago: PaymentMethod | null;
   observacion: string | null;
+  apellido_cliente: string | null;
   productos: OrderProductDTO[];
 }
 
@@ -71,8 +74,8 @@ export interface ProductCreateOrderDTO {
 
 // ==================== TYPES ====================
 
-export type OrderStatus = 'preparando' | 'listo' | 'entregado' | 'cancelado';
-export type PaymentMethod = 'efectivo' | 'transferencia';
+export type OrderStatus = "preparando" | "listo" | "entregado" | "cancelado";
+export type PaymentMethod = "efectivo" | "transferencia";
 
 // ==================== QUERY DTOs ====================
 

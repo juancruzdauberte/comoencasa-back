@@ -25,7 +25,8 @@ export class OrderService {
     observation: string,
     products: ProductCreateOrderDTO[],
     payMethod: string,
-    amount: number
+    amount: number,
+    clientSurname: string
   ) {
     // Validaciones previas
     if (!products || products.length === 0) {
@@ -62,7 +63,8 @@ export class OrderService {
       observation,
       products,
       payMethod,
-      amount
+      amount,
+      clientSurname
     );
   }
 
@@ -158,7 +160,8 @@ export class OrderService {
     state: string,
     payMethod: string,
     amount: number,
-    products: ProductCreateOrderDTO[]
+    products: ProductCreateOrderDTO[],
+    clientSurname: string
   ) {
     // Validar existencia del pedido
     const orderExists = await this.orderRepository.orderExists(Number(orderId));
@@ -199,7 +202,8 @@ export class OrderService {
       state,
       payMethod,
       amount,
-      products
+      products,
+      clientSurname
     );
   }
 
