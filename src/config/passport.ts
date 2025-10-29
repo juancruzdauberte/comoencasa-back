@@ -3,8 +3,11 @@ import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import config from "./config";
 import { generateAccessToken, generateRefreshToken } from "../utils/utils";
 import UserService from "../services/user.service";
+import { UserRepository } from "../repositories";
 
 export function configurePassport() {
+  const userRepository = new UserRepository();
+  const userService = new UserService(userRepository);
   passport.use(
     new GoogleStrategy(
       {
@@ -18,7 +21,7 @@ export function configurePassport() {
           const avatar = profile.photos?.[0]?.value ?? "";
 
           if (!authenticateEmail) return done(null, false);
-          const user = await UserService.getUserByEmail(authenticateEmail);
+          const user = await userService.getUserByEmail(authenticateEmail);
           if (!user) {
             return done(null, false);
           }

@@ -1,20 +1,22 @@
+import { ErrorFactory } from "../errors/errorFactory";
 import {
-  ProductRepository,
-  CategoryRepository,
-} from '../repositories/product.repository';
-import { ErrorFactory } from '../errors/errorFactory';
+  ICategoryRepository,
+  IProductRepository,
+} from "../interfaces/product.interface";
 
 export class ProductService {
-  private static productRepository = new ProductRepository();
-  private static categoryRepository = new CategoryRepository();
+  constructor(
+    private productRepository: IProductRepository,
+    private categoryRepository: ICategoryRepository
+  ) {}
 
   // ==================== PRODUCT METHODS ====================
 
-  static async getAllProducts() {
+  async getAllProducts() {
     return await this.productRepository.findAll();
   }
 
-  static async getProductById(id: number) {
+  async getProductById(id: number) {
     const product = await this.productRepository.findById(id);
 
     if (!product) {
@@ -24,7 +26,7 @@ export class ProductService {
     return product;
   }
 
-  static async getProductsByCategory(categoryId: string) {
+  async getProductsByCategory(categoryId: string) {
     // Validar que la categoría existe
     const categoryExists = await this.categoryRepository.exists(
       Number(categoryId)
@@ -39,20 +41,20 @@ export class ProductService {
     return await this.productRepository.findByCategory(categoryId);
   }
 
-  static async searchProductsByName(name: string) {
+  async searchProductsByName(name: string) {
     if (!name || name.trim().length < 2) {
       throw ErrorFactory.badRequest(
-        'El nombre debe tener al menos 2 caracteres'
+        "El nombre debe tener al menos 2 caracteres"
       );
     }
 
     return await this.productRepository.findByName(name.trim());
   }
 
-  static async createProduct(productName: string, categoryId: number) {
+  async createProduct(productName: string, categoryId: number) {
     // Validar nombre
     if (!productName || productName.trim().length === 0) {
-      throw ErrorFactory.badRequest('El nombre del producto es requerido');
+      throw ErrorFactory.badRequest("El nombre del producto es requerido");
     }
 
     // Validar que la categoría existe
@@ -64,10 +66,10 @@ export class ProductService {
     return await this.productRepository.create(productName.trim(), categoryId);
   }
 
-  static async updateProductName(id: number, name: string) {
+  async updateProductName(id: number, name: string) {
     // Validar nombre
     if (!name || name.trim().length === 0) {
-      throw ErrorFactory.badRequest('El nombre del producto es requerido');
+      throw ErrorFactory.badRequest("El nombre del producto es requerido");
     }
 
     // Verificar que el producto existe
@@ -79,7 +81,7 @@ export class ProductService {
     await this.productRepository.updateName(id, name.trim());
   }
 
-  static async updateProductCategory(id: number, categoryId: number) {
+  async updateProductCategory(id: number, categoryId: number) {
     // Verificar que el producto existe
     const productExists = await this.productRepository.exists(id);
     if (!productExists) {
@@ -95,7 +97,7 @@ export class ProductService {
     await this.productRepository.updateCategory(id, categoryId);
   }
 
-  static async deleteProduct(id: number) {
+  async deleteProduct(id: number) {
     const productExists = await this.productRepository.exists(id);
     if (!productExists) {
       throw ErrorFactory.notFound(`Producto con ID ${id} no encontrado`);
@@ -104,11 +106,11 @@ export class ProductService {
     await this.productRepository.delete(id);
   }
 
-  static async getProductCount() {
+  async getProductCount() {
     return await this.productRepository.count();
   }
 
-  static async getProductCountByCategory(categoryId: number) {
+  async getProductCountByCategory(categoryId: number) {
     const categoryExists = await this.categoryRepository.exists(categoryId);
     if (!categoryExists) {
       throw ErrorFactory.notFound(`Categoría con ID ${categoryId} no existe`);
@@ -119,11 +121,11 @@ export class ProductService {
 
   // ==================== CATEGORY METHODS ====================
 
-  static async getProductsCategory() {
+  async getProductsCategory() {
     return await this.categoryRepository.findAll();
   }
 
-  static async getCategoryById(id: number) {
+  async getCategoryById(id: number) {
     const category = await this.categoryRepository.findById(id);
 
     if (!category) {
@@ -133,7 +135,7 @@ export class ProductService {
     return category;
   }
 
-  static async getCategoryByName(name: string) {
+  async getCategoryByName(name: string) {
     const category = await this.categoryRepository.findByName(name);
 
     if (!category) {
@@ -145,19 +147,19 @@ export class ProductService {
     return category;
   }
 
-  static async createCategory(categoryName: string) {
+  async createCategory(categoryName: string) {
     // Validar nombre
     if (!categoryName || categoryName.trim().length === 0) {
-      throw ErrorFactory.badRequest('El nombre de la categoría es requerido');
+      throw ErrorFactory.badRequest("El nombre de la categoría es requerido");
     }
 
     return await this.categoryRepository.create(categoryName.trim());
   }
 
-  static async updateCategoryName(id: number, name: string) {
+  async updateCategoryName(id: number, name: string) {
     // Validar nombre
     if (!name || name.trim().length === 0) {
-      throw ErrorFactory.badRequest('El nombre de la categoría es requerido');
+      throw ErrorFactory.badRequest("El nombre de la categoría es requerido");
     }
 
     // Verificar que la categoría existe
@@ -169,7 +171,7 @@ export class ProductService {
     await this.categoryRepository.updateName(id, name.trim());
   }
 
-  static async deleteCategory(id: number) {
+  async deleteCategory(id: number) {
     const categoryExists = await this.categoryRepository.exists(id);
     if (!categoryExists) {
       throw ErrorFactory.notFound(`Categoría con ID ${id} no encontrada`);
@@ -178,7 +180,7 @@ export class ProductService {
     await this.categoryRepository.delete(id);
   }
 
-  static async getCategoryCount() {
+  async getCategoryCount() {
     return await this.categoryRepository.count();
   }
 }

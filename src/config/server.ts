@@ -16,6 +16,7 @@ import helmet from "helmet";
 import { limiter } from "./limiter";
 
 const app = express();
+app.set("trust proxy", 1);
 
 app.use(helmet());
 app.use(express.urlencoded({ extended: true }));
@@ -33,7 +34,7 @@ app.use(compression());
 
 setupSwagger(app);
 
-app.use("/api", limiter);
+app.use(limiter);
 app.use("/api/auth", authRoutes);
 app.use("/api/products", authenticateRequest, productsRoutes);
 app.use("/api/orders", authenticateRequest, ordersRoutes);

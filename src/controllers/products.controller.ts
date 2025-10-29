@@ -1,11 +1,19 @@
-import { NextFunction, Request, Response } from 'express';
-import { ProductService } from '../services/products.service';
-import { ErrorFactory } from '../errors/errorFactory';
+import { NextFunction, Request, Response } from "express";
+import { ProductService } from "../services/products.service";
+import { ErrorFactory } from "../errors/errorFactory";
 import {
   CreateCategoryRequestDTO,
   CreateProductRequestDTO,
   ProductQueryParamsDTO,
-} from '../dtos/product.dto';
+} from "../dtos/product.dto";
+import { CategoryRepository, ProductRepository } from "../repositories";
+
+const productRepository = new ProductRepository();
+const cateogryRepository = new CategoryRepository();
+const productService = new ProductService(
+  productRepository,
+  cateogryRepository
+);
 
 export async function getProductsCategory(
   req: Request,
@@ -13,7 +21,7 @@ export async function getProductsCategory(
   next: NextFunction
 ) {
   try {
-    const categories = await ProductService.getProductsCategory();
+    const categories = await productService.getProductsCategory();
     res.status(200).json(categories);
   } catch (error) {
     next(error);
@@ -30,11 +38,11 @@ export async function getProductsByCategory(
 
     let products;
     if (!category) {
-      products = await ProductService.getAllProducts();
-    } else if (typeof category === 'string') {
-      products = await ProductService.getProductsByCategory(category);
+      products = await productService.getAllProducts();
+    } else if (typeof category === "string") {
+      products = await productService.getProductsByCategory(category);
     } else {
-      throw ErrorFactory.badRequest('Categoría inválida');
+      throw ErrorFactory.badRequest("Categoría inválida");
     }
 
     res.status(200).json(products);
@@ -52,10 +60,10 @@ export async function getProductById(
     const { pid } = req.params;
 
     if (!pid) {
-      throw ErrorFactory.badRequest('ID de producto es requerido');
+      throw ErrorFactory.badRequest("ID de producto es requerido");
     }
 
-    const product = await ProductService.getProductById(parseInt(pid));
+    const product = await productService.getProductById(parseInt(pid));
     res.status(200).json(product);
   } catch (error) {
     next(error);
@@ -71,10 +79,10 @@ export async function createProduct(
     const { nombre, categoria_id } = req.body as CreateProductRequestDTO;
 
     if (!nombre || !categoria_id) {
-      throw ErrorFactory.badRequest('Nombre y categoría son requeridos');
+      throw ErrorFactory.badRequest("Nombre y categoría son requeridos");
     }
 
-    const productId = await ProductService.createProduct(nombre, categoria_id);
+    const productId = await productService.createProduct(nombre, categoria_id);
 
     res.status(201).json({
       message: `Producto creado: ${nombre}`,
@@ -94,11 +102,11 @@ export async function deleteProduct(
     const { pid } = req.params;
 
     if (!pid) {
-      throw ErrorFactory.badRequest('ID de producto es requerido');
+      throw ErrorFactory.badRequest("ID de producto es requerido");
     }
 
-    await ProductService.deleteProduct(Number(pid));
-    res.status(200).json({ message: 'Producto eliminado' });
+    await productService.deleteProduct(Number(pid));
+    res.status(200).json({ message: "Producto eliminado" });
   } catch (error) {
     next(error);
   }
@@ -113,11 +121,11 @@ export async function deleteCategory(
     const { cid } = req.params;
 
     if (!cid) {
-      throw ErrorFactory.badRequest('ID de categoría es requerido');
+      throw ErrorFactory.badRequest("ID de categoría es requerido");
     }
 
-    await ProductService.deleteCategory(Number(cid));
-    res.status(200).json({ message: 'Categoría eliminada' });
+    await productService.deleteCategory(Number(cid));
+    res.status(200).json({ message: "Categoría eliminada" });
   } catch (error) {
     next(error);
   }
@@ -132,10 +140,10 @@ export async function createCategory(
     const { nombre } = req.body as CreateCategoryRequestDTO;
 
     if (!nombre) {
-      throw ErrorFactory.badRequest('Nombre de categoría es requerido');
+      throw ErrorFactory.badRequest("Nombre de categoría es requerido");
     }
 
-    const categoryId = await ProductService.createCategory(nombre);
+    const categoryId = await productService.createCategory(nombre);
 
     res.status(201).json({
       message: `Categoría creada: ${nombre}`,

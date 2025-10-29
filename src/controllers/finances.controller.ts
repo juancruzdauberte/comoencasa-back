@@ -2,10 +2,13 @@ import { NextFunction, Request, Response } from "express";
 import { FinanceService } from "../services/finances.service";
 import { ErrorFactory } from "../errors/errorFactory";
 import {
-  FinanceParamQueryDTO,
   MonthlyQueryParamsDTO,
   UpdateFinanceParamRequestDTO,
 } from "../dtos/finance.dto";
+import { FinanceRepository } from "../repositories";
+
+const financeRepository = new FinanceRepository();
+const financeService = new FinanceService(financeRepository);
 
 export async function getAmountToday(
   req: Request,
@@ -13,7 +16,7 @@ export async function getAmountToday(
   next: NextFunction
 ) {
   try {
-    const amount = await FinanceService.getAmountToday();
+    const amount = await financeService.getAmountToday();
     res.status(200).json(amount);
   } catch (error) {
     next(error);
@@ -26,7 +29,7 @@ export async function getTransferAmountToday(
   next: NextFunction
 ) {
   try {
-    const amount = await FinanceService.getTransferAmountToday();
+    const amount = await financeService.getTransferAmountToday();
     res.status(200).json(amount);
   } catch (error) {
     next(error);
@@ -39,7 +42,7 @@ export async function getCashAmountToday(
   next: NextFunction
 ) {
   try {
-    const amount = await FinanceService.getCashAmountToday();
+    const amount = await financeService.getCashAmountToday();
     res.status(200).json(amount);
   } catch (error) {
     next(error);
@@ -58,7 +61,7 @@ export async function getAmountMonthly(
       throw ErrorFactory.badRequest("Mes y año son requeridos");
     }
 
-    const amount = await FinanceService.getAmountMonthly(
+    const amount = await financeService.getAmountMonthly(
       Number(month),
       Number(year)
     );
@@ -81,7 +84,7 @@ export async function getTransferAmountMonthly(
       throw ErrorFactory.badRequest("Mes y año son requeridos");
     }
 
-    const amount = await FinanceService.getTransferAmountMonthly(
+    const amount = await financeService.getTransferAmountMonthly(
       Number(month),
       Number(year)
     );
@@ -104,7 +107,7 @@ export async function getCashAmountMonthly(
       throw ErrorFactory.badRequest("Mes y año son requeridos");
     }
 
-    const amount = await FinanceService.getCashAmountMonthly(
+    const amount = await financeService.getCashAmountMonthly(
       Number(month),
       Number(year)
     );
@@ -121,7 +124,7 @@ export async function getDeliveryAmountToPay(
   next: NextFunction
 ) {
   try {
-    const amountToPay = await FinanceService.getDeliveryAmountToPay();
+    const amountToPay = await financeService.getDeliveryAmountToPay();
     res.status(200).json(amountToPay);
   } catch (error) {
     next(error);
@@ -140,7 +143,7 @@ export async function getValueFinanceParam(
       throw ErrorFactory.badRequest("Nombre del parámetro es requerido");
     }
 
-    const price = await FinanceService.getValueFinanceParam(String(paramName));
+    const price = await financeService.getValueFinanceParam(String(paramName));
     res.status(200).json(price);
   } catch (error) {
     next(error);
@@ -161,7 +164,7 @@ export async function updateValueFinanceParam(
       );
     }
 
-    await FinanceService.updateValueFinanceParam(Number(value), paramName);
+    await financeService.updateValueFinanceParam(Number(value), paramName);
 
     res.status(200).json({
       message: "Parámetro financiero actualizado correctamente",
@@ -177,7 +180,7 @@ export async function getDeliveryCashAmount(
   next: NextFunction
 ) {
   try {
-    const total = await FinanceService.getDeliveryCashAmount();
+    const total = await financeService.getDeliveryCashAmount();
     res.status(200).json(total);
   } catch (error) {
     next(error);

@@ -1,17 +1,16 @@
-import { UserRepository } from "../repositories/user.repository";
 import { ErrorFactory } from "../errors/errorFactory";
 import { UserDTO } from "../dtos/auth.dto";
+import { IUserRepository } from "../interfaces/user.interface";
 
 export class UserService {
-  private static userRepository = new UserRepository();
-
+  constructor(private userRepository: IUserRepository) {}
   /**
    * Obtiene un usuario por su email
    * @param email Email del usuario
    * @returns Usuario encontrado
    * @throws NotFoundError si el usuario no existe
    */
-  static async getUserByEmail(email: string): Promise<UserDTO> {
+  async getUserByEmail(email: string): Promise<UserDTO> {
     const user = await this.userRepository.findByEmail(email);
 
     if (!user) {

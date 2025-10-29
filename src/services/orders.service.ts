@@ -1,15 +1,15 @@
-import { OrderRepository } from "../repositories/order.repository";
 import { ProductCreateOrderDTO } from "../dtos/order.dto";
 import { ErrorFactory } from "../errors/errorFactory";
+import { IOrderRepository } from "../interfaces/order.interface";
 
 export class OrderService {
-  private static orderRepository = new OrderRepository();
+  constructor(private orderRepository: IOrderRepository) {}
 
-  static async getOrders(filter: string | null, limit: number, offset: number) {
+  async getOrders(filter: string | null, limit: number, offset: number) {
     return await this.orderRepository.findAll(filter, limit, offset);
   }
 
-  static async getOrderById(orderId: number) {
+  async getOrderById(orderId: number) {
     const order = await this.orderRepository.findById(orderId);
 
     if (!order) {
@@ -19,7 +19,7 @@ export class OrderService {
     return order;
   }
 
-  static async createOrder(
+  async createOrder(
     address: string,
     deliveryTime: string,
     observation: string,
@@ -68,7 +68,7 @@ export class OrderService {
     );
   }
 
-  static async addProductToOrder(
+  async addProductToOrder(
     orderId: number,
     productId: number,
     quantity: number
@@ -95,7 +95,7 @@ export class OrderService {
     await this.orderRepository.addProduct(orderId, productId, quantity);
   }
 
-  static async insertOrderDatePay(orderId: number) {
+  async insertOrderDatePay(orderId: number) {
     const orderExists = await this.orderRepository.orderExists(orderId);
     if (!orderExists) {
       throw ErrorFactory.notFound(`Pedido con ID ${orderId} no existe`);
@@ -104,7 +104,7 @@ export class OrderService {
     await this.orderRepository.insertPaymentDate(orderId);
   }
 
-  static async deleteProductFromOrder(orderId: number, productId: number) {
+  async deleteProductFromOrder(orderId: number, productId: number) {
     const orderExists = await this.orderRepository.orderExists(orderId);
     if (!orderExists) {
       throw ErrorFactory.notFound(`Pedido con ID ${orderId} no existe`);
@@ -121,7 +121,7 @@ export class OrderService {
     await this.orderRepository.deleteProduct(orderId, productId);
   }
 
-  static async updateProductQuantity(
+  async updateProductQuantity(
     orderId: number,
     productId: number,
     quantity: number
@@ -152,7 +152,7 @@ export class OrderService {
     );
   }
 
-  static async updateOrder(
+  async updateOrder(
     orderId: string,
     address: string,
     deliveryTime: string,
@@ -207,7 +207,7 @@ export class OrderService {
     );
   }
 
-  static async deleteOrder(orderId: number) {
+  async deleteOrder(orderId: number) {
     const orderExists = await this.orderRepository.orderExists(orderId);
     if (!orderExists) {
       throw ErrorFactory.notFound(`Pedido con ID ${orderId} no existe`);
