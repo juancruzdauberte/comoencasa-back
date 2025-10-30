@@ -40,13 +40,9 @@ export class FinanceService {
     return await this.financeRepository.getDeliveryCashAmount();
   }
 
-  // --- Lógica de Negocio Añadida ---
-
   async getValueFinanceParam(paramName: string) {
-    // El repositorio devuelve 'null' si no lo encuentra
     const param = await this.financeRepository.getFinanceParamValue(paramName);
 
-    // El servicio aplica la regla de negocio: si es 'null', es un 404.
     if (!param) {
       throw ErrorFactory.notFound(
         `Parámetro financiero '${paramName}' no encontrado`
@@ -64,8 +60,6 @@ export class FinanceService {
           paramName,
           conn
         );
-
-        // El servicio comprueba el resultado (lógica de negocio)
         if (result.affectedRows === 0) {
           throw ErrorFactory.notFound(
             `Parámetro financiero '${paramName}' no encontrado para actualizar`
