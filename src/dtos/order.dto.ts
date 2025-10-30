@@ -9,14 +9,14 @@ export interface CreateOrderRequestDTO {
 }
 
 export interface UpdateOrderRequestDTO {
-  domicilio?: string;
-  hora_entrega?: string;
-  observacion?: string;
-  estado?: OrderStatus;
-  metodo_pago?: PaymentMethod;
-  monto?: number;
-  productos?: ProductCreateOrderDTO[];
-  apellido_cliente?: string;
+  domicilio: string;
+  hora_entrega: string;
+  observacion: string;
+  estado: OrderStatus;
+  metodo_pago: PaymentMethod;
+  monto: number;
+  productos: ProductCreateOrderDTO[];
+  apellido_cliente: string;
 }
 
 export interface AddProductToOrderRequestDTO {

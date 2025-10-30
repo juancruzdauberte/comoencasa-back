@@ -1,4 +1,4 @@
-import { PoolConnection } from "mysql2/promise";
+import { PoolConnection, ResultSetHeader } from "mysql2/promise";
 import { OrderResponseDTO, ProductCreateOrderDTO } from "../dtos/order.dto";
 import {
   IBaseRepository,
@@ -15,43 +15,71 @@ export interface IOrderRepository extends IBaseRepository {
   findById(id: number): Promise<OrderResponseDTO | null>;
 
   create(
-    address: string,
-    deliveryTime: string,
-    observation: string,
-    products: ProductCreateOrderDTO[],
-    payMethod: string,
-    amount: number,
-    clientSurname: string
+    data: {
+      address: string;
+      deliveryTime: string;
+      observation: string;
+      clientSurname: string;
+    },
+    conn: PoolConnection
   ): Promise<number>;
 
   addProduct(
     orderId: number,
     productId: number,
-    quantity: number
+    quantity: number,
+    conn: PoolConnection
   ): Promise<void>;
 
-  insertPaymentDate(orderId: number): Promise<void>;
+  insertPaymentDate(
+    orderId: number,
+    conn: PoolConnection
+  ): Promise<ResultSetHeader>;
 
-  deleteProduct(orderId: number, productId: number): Promise<void>;
-
-  delete(orderId: number): Promise<void>;
-
-  update(
-    orderId: string,
-    address: string,
-    deliveryTime: string,
-    observation: string,
-    state: string,
+  createOrderPayment(
+    orderId: number,
     payMethod: string,
     amount: number,
+    conn: PoolConnection
+  ): Promise<void>;
+
+  deleteProduct(
+    orderId: number,
+    productId: number,
+    conn: PoolConnection
+  ): Promise<ResultSetHeader>;
+
+  createOrderDetails(
+    orderId: number,
     products: ProductCreateOrderDTO[],
-    clientSurname: string
+    conn: PoolConnection
+  ): Promise<void>;
+
+  updateOrderPayment(
+    orderId: number,
+    payMethond: string,
+    amount: number,
+    conn: PoolConnection
+  ): Promise<void>;
+  delete(orderId: number, conn: PoolConnection): Promise<ResultSetHeader>;
+
+  update(
+    orderId: number,
+    data: {
+      address: string;
+      deliveryTime: string;
+      observation: string;
+      state: string;
+      clientSurname: string;
+    },
+    conn: PoolConnection
   ): Promise<void>;
 
   updateProductQuantity(
     orderId: number,
     productId: number,
-    quantity: number
+    quantity: number,
+    conn: PoolConnection
   ): Promise<void>;
 
   orderExists(orderId: number, conn?: PoolConnection): Promise<boolean>;

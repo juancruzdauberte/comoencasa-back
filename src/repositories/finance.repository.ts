@@ -8,167 +8,106 @@ import { ErrorFactory } from "../errors/errorFactory";
 import { AppError } from "../errors/errors";
 import { IFinanceRepository } from "../interfaces/finance.interface";
 import { secureLogger } from "../config/logger";
-import { withTransaction } from "../utils/database.utils";
 
 export class FinanceRepository implements IFinanceRepository {
   async getConnection(): Promise<PoolConnection> {
     return await db.getConnection();
   }
 
-  async getAmountToday(): Promise<AmountResponseDTO> {
-    try {
-      const [rows] = await db.query<RowDataPacket[]>(
-        "SELECT COALESCE(SUM(pc.monto),0) AS total FROM pagocliente pc WHERE DATE(pc.fechaPago) = DATE(DATE_SUB(NOW(), INTERVAL 3 HOUR));"
-      );
+  private async getAggregatedAmount(
+    baseQuery: string,
+    whereClauses: string[],
+    params: (string | number)[]
+  ): Promise<AmountResponseDTO> {
+    const query = `${baseQuery} ${
+      whereClauses.length > 0 ? "WHERE " + whereClauses.join(" AND ") : ""
+    }`;
 
-      if (!rows || rows.length === 0) {
-        throw ErrorFactory.internal("Error al obtener el monto de hoy");
-      }
+    try {
+      const [rows] = await db.query<RowDataPacket[]>(query, params);
 
       return rows[0] as AmountResponseDTO;
     } catch (error) {
-      if (error instanceof AppError) {
-        throw error;
-      }
-      secureLogger.error("Error fetching amount today", error);
-      throw ErrorFactory.internal("Error al obtener el monto de hoy");
+      secureLogger.error("Error fetching aggregated amount", error, {
+        query,
+        params,
+      });
+      if (error instanceof AppError) throw error;
+      throw ErrorFactory.internal("Error al obtener monto agregado");
     }
+  }
+
+  private get baseAmountQuery(): string {
+    return "SELECT COALESCE(SUM(pc.monto),0) AS total FROM pagocliente pc";
+  }
+
+  private get todayDateClause(): string {
+    return "DATE(pc.fechaPago) = DATE(DATE_SUB(NOW(), INTERVAL 3 HOUR))";
+  }
+
+  async getAmountToday(): Promise<AmountResponseDTO> {
+    return this.getAggregatedAmount(
+      this.baseAmountQuery,
+      [this.todayDateClause],
+      []
+    );
   }
 
   async getTransferAmountToday(): Promise<AmountResponseDTO> {
-    try {
-      const [rows] = await db.query<RowDataPacket[]>(
-        "SELECT COALESCE(SUM(pc.monto),0) AS total FROM pagocliente pc WHERE DATE(pc.fechaPago) = DATE(DATE_SUB(NOW(), INTERVAL 3 HOUR)) AND pc.metodoPago = 'transferencia'"
-      );
-
-      if (!rows || rows.length === 0) {
-        throw ErrorFactory.internal(
-          "Error al obtener el monto de transferencias de hoy"
-        );
-      }
-
-      return rows[0] as AmountResponseDTO;
-    } catch (error) {
-      if (error instanceof AppError) {
-        throw error;
-      }
-      secureLogger.error("Error fetching transfer amount today", error);
-      throw ErrorFactory.internal(
-        "Error al obtener el monto de transferencias de hoy"
-      );
-    }
+    return this.getAggregatedAmount(
+      this.baseAmountQuery,
+      [this.todayDateClause, "pc.metodoPago = ?"],
+      ["transferencia"]
+    );
   }
 
   async getCashAmountToday(): Promise<AmountResponseDTO> {
-    try {
-      const [rows] = await db.query<RowDataPacket[]>(
-        "SELECT COALESCE(SUM(pc.monto),0) AS total FROM pagocliente pc WHERE DATE(pc.fechaPago) = DATE(DATE_SUB(NOW(), INTERVAL 3 HOUR)) AND pc.metodoPago = 'efectivo';"
-      );
-
-      if (!rows || rows.length === 0) {
-        throw ErrorFactory.internal(
-          "Error al obtener el monto en efectivo de hoy"
-        );
-      }
-      return rows[0] as AmountResponseDTO;
-    } catch (error) {
-      if (error instanceof AppError) {
-        throw error;
-      }
-      secureLogger.error("Error fetching cash amount today", error);
-      throw ErrorFactory.internal(
-        "Error al obtener el monto en efectivo de hoy"
-      );
-    }
+    return this.getAggregatedAmount(
+      this.baseAmountQuery,
+      [this.todayDateClause, "pc.metodoPago = ?"],
+      ["efectivo"]
+    );
   }
 
   async getAmountMonthly(
     month: number,
     year: number
   ): Promise<AmountResponseDTO> {
-    try {
-      const [rows] = await db.query<RowDataPacket[]>(
-        "SELECT COALESCE(SUM(pc.monto),0) AS total FROM pagocliente pc WHERE MONTH(pc.fechaPago) = ? AND YEAR(pc.fechaPago) = ?",
-        [month, year]
-      );
-
-      if (!rows || rows.length === 0) {
-        throw ErrorFactory.internal("Error al obtener el monto mensual");
-      }
-
-      return rows[0] as AmountResponseDTO;
-    } catch (error) {
-      if (error instanceof AppError) {
-        throw error;
-      }
-      secureLogger.error("Error fetching monthly amount", error, {
-        month,
-        year,
-      });
-      throw ErrorFactory.internal("Error al obtener el monto mensual");
-    }
+    return this.getAggregatedAmount(
+      this.baseAmountQuery,
+      ["MONTH(pc.fechaPago) = ?", "YEAR(pc.fechaPago) = ?"],
+      [month, year]
+    );
   }
 
   async getTransferAmountMonthly(
     month: number,
     year: number
   ): Promise<AmountResponseDTO> {
-    try {
-      const [rows] = await db.query<RowDataPacket[]>(
-        "SELECT COALESCE(SUM(pc.monto),0) AS total FROM pagocliente pc WHERE MONTH(pc.fechaPago) = ? AND YEAR(pc.fechaPago) = ? AND pc.metodoPago = 'transferencia'",
-        [month, year]
-      );
-
-      if (!rows || rows.length === 0) {
-        throw ErrorFactory.internal(
-          "Error al obtener el monto de transferencias mensual"
-        );
-      }
-
-      return rows[0] as AmountResponseDTO;
-    } catch (error) {
-      if (error instanceof AppError) {
-        throw error;
-      }
-      secureLogger.error("Error fetching monthly transfer amount", error, {
-        month,
-        year,
-      });
-      throw ErrorFactory.internal(
-        "Error al obtener el monto de transferencias mensual"
-      );
-    }
+    return this.getAggregatedAmount(
+      this.baseAmountQuery,
+      [
+        "MONTH(pc.fechaPago) = ?",
+        "YEAR(pc.fechaPago) = ?",
+        "pc.metodoPago = ?",
+      ],
+      [month, year, "transferencia"]
+    );
   }
 
   async getCashAmountMonthly(
     month: number,
     year: number
   ): Promise<AmountResponseDTO> {
-    try {
-      const [rows] = await db.query<RowDataPacket[]>(
-        "SELECT COALESCE(SUM(pc.monto),0) AS total FROM pagocliente pc WHERE MONTH(pc.fechaPago) = ? AND YEAR(pc.fechaPago) = ? AND pc.metodoPago = 'efectivo'",
-        [month, year]
-      );
-
-      if (!rows || rows.length === 0) {
-        throw ErrorFactory.internal(
-          "Error al obtener el monto en efectivo mensual"
-        );
-      }
-
-      return rows[0] as AmountResponseDTO;
-    } catch (error) {
-      if (error instanceof AppError) {
-        throw error;
-      }
-      secureLogger.error("Error fetching monthly cash amount", error, {
-        month,
-        year,
-      });
-      throw ErrorFactory.internal(
-        "Error al obtener el monto en efectivo mensual"
-      );
-    }
+    return this.getAggregatedAmount(
+      this.baseAmountQuery,
+      [
+        "MONTH(pc.fechaPago) = ?",
+        "YEAR(pc.fechaPago) = ?",
+        "pc.metodoPago = ?",
+      ],
+      [month, year, "efectivo"]
+    );
   }
 
   async getDeliveryAmountToPay(): Promise<AmountResponseDTO> {
@@ -177,7 +116,7 @@ export class FinanceRepository implements IFinanceRepository {
         "CALL calcular_total_motoquero()"
       );
 
-      if (!rows || !rows[0] || rows[0].length === 0) {
+      if (!rows || !rows[0] || (rows[0] as any).length === 0) {
         throw ErrorFactory.internal(
           "Error al obtener el monto a pagar al delivery"
         );
@@ -185,9 +124,7 @@ export class FinanceRepository implements IFinanceRepository {
 
       return rows[0][0] as AmountResponseDTO;
     } catch (error) {
-      if (error instanceof AppError) {
-        throw error;
-      }
+      if (error instanceof AppError) throw error;
       secureLogger.error("Error fetching delivery amount to pay", error);
       throw ErrorFactory.internal(
         "Error al obtener el monto a pagar al delivery"
@@ -196,22 +133,13 @@ export class FinanceRepository implements IFinanceRepository {
   }
 
   async getDeliveryCashAmount(): Promise<AmountResponseDTO> {
+    const query =
+      "SELECT COALESCE(SUM(pc.monto),0) AS total FROM pagocliente pc INNER JOIN pedido p ON p.id = pc.pedido_id WHERE DATE(pc.fechaPago) = DATE(DATE_SUB(NOW(), INTERVAL 3 HOUR)) AND pc.metodoPago = 'efectivo' AND p.domicilio IS NOT NULL";
     try {
-      const [rows] = await db.query<RowDataPacket[]>(
-        "SELECT COALESCE(SUM(pc.monto),0) AS total FROM pagocliente pc INNER JOIN pedido p ON p.id = pc.pedido_id WHERE DATE(pc.fechaPago) = DATE(DATE_SUB(NOW(), INTERVAL 3 HOUR)) AND pc.metodoPago = 'efectivo' AND p.domicilio IS NOT NULL"
-      );
-
-      if (!rows || rows.length === 0) {
-        throw ErrorFactory.internal(
-          "Error al obtener el monto en efectivo del delivery"
-        );
-      }
-
+      const [rows] = await db.query<RowDataPacket[]>(query);
       return rows[0] as AmountResponseDTO;
     } catch (error) {
-      if (error instanceof AppError) {
-        throw error;
-      }
+      if (error instanceof AppError) throw error;
       secureLogger.error("Error fetching delivery cash amount", error);
       throw ErrorFactory.internal(
         "Error al obtener el monto en efectivo del delivery"
@@ -221,7 +149,7 @@ export class FinanceRepository implements IFinanceRepository {
 
   async getFinanceParamValue(
     paramName: string
-  ): Promise<FinanceParamResponseDTO> {
+  ): Promise<FinanceParamResponseDTO | null> {
     try {
       const [rows] = await db.query<RowDataPacket[]>(
         "SELECT pf.valor FROM parametrosfinancieros pf WHERE pf.nombreParametro = ?",
@@ -229,16 +157,12 @@ export class FinanceRepository implements IFinanceRepository {
       );
 
       if (rows.length === 0) {
-        throw ErrorFactory.notFound(
-          `Parámetro financiero '${paramName}' no encontrado`
-        );
+        return null;
       }
 
       return rows[0] as FinanceParamResponseDTO;
     } catch (error) {
-      if (error instanceof AppError) {
-        throw error;
-      }
+      if (error instanceof AppError) throw error;
       secureLogger.error("Error fetching finance param value", error, {
         paramName,
       });
@@ -248,24 +172,14 @@ export class FinanceRepository implements IFinanceRepository {
 
   async updateFinanceParamValue(
     value: number,
-    paramName: string
-  ): Promise<void> {
-    return withTransaction(async (conn) => {
-      const [result] = await conn.query<ResultSetHeader>(
-        "UPDATE parametrosfinancieros pf SET pf.valor = ? WHERE pf.nombreParametro = ?",
-        [value, paramName]
-      );
+    paramName: string,
+    conn: PoolConnection
+  ): Promise<ResultSetHeader> {
+    const [result] = await conn.query<ResultSetHeader>(
+      "UPDATE parametrosfinancieros pf SET pf.valor = ? WHERE pf.nombreParametro = ?",
+      [value, paramName]
+    );
 
-      if (result.affectedRows === 0) {
-        throw ErrorFactory.notFound(
-          `Parámetro financiero '${paramName}' no encontrado`
-        );
-      }
-
-      secureLogger.info("Finance param updated successfully", {
-        paramName,
-        value,
-      });
-    });
+    return result;
   }
 }

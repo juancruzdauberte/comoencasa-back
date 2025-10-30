@@ -81,15 +81,15 @@ export async function createOrder(
       apellido_cliente = "",
     } = req.body as CreateOrderRequestDTO;
 
-    await orderService.createOrder(
+    await orderService.createOrder({
       domicilio,
       hora_entrega,
       observacion,
       productos,
       metodo_pago,
       monto,
-      apellido_cliente
-    );
+      apellido_cliente,
+    });
 
     res.status(201).json({ message: "Pedido creado con éxito." });
   } catch (error) {
@@ -209,17 +209,16 @@ export async function updateOrder(
       apellido_cliente,
     } = req.body as UpdateOrderRequestDTO;
 
-    await orderService.updateOrder(
-      oid,
-      domicilio!,
-      hora_entrega!,
-      observacion!,
-      estado!,
-      metodo_pago!,
-      monto!,
-      productos!,
-      apellido_cliente!
-    );
+    await orderService.updateOrder(Number(oid), {
+      domicilio,
+      hora_entrega,
+      observacion,
+      estado,
+      metodo_pago,
+      monto,
+      productos,
+      apellido_cliente,
+    });
 
     res.status(200).json({ message: "Pedido actualizado correctamente" });
   } catch (error) {

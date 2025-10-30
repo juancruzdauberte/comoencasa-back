@@ -1,8 +1,10 @@
+import { PoolConnection } from "mysql2/promise";
 import {
   AmountResponseDTO,
   FinanceParamResponseDTO,
 } from "../dtos/finance.dto";
 import { IBaseRepository } from "./repository.interface";
+import { ResultSetHeader } from "mysql2";
 
 export interface IFinanceRepository extends IBaseRepository {
   getAmountToday(): Promise<AmountResponseDTO>;
@@ -24,7 +26,13 @@ export interface IFinanceRepository extends IBaseRepository {
 
   getDeliveryCashAmount(): Promise<AmountResponseDTO>;
 
-  getFinanceParamValue(paramName: string): Promise<FinanceParamResponseDTO>;
+  getFinanceParamValue(
+    paramName: string
+  ): Promise<FinanceParamResponseDTO | null>;
 
-  updateFinanceParamValue(value: number, paramName: string): Promise<void>;
+  updateFinanceParamValue(
+    value: number,
+    paramName: string,
+    conn: PoolConnection
+  ): Promise<ResultSetHeader>;
 }

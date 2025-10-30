@@ -1,8 +1,11 @@
+import { secureLogger } from "../config/logger";
 import { ErrorFactory } from "../errors/errorFactory";
+import { AppError } from "../errors/errors";
 import {
   ICategoryRepository,
   IProductRepository,
 } from "../interfaces/product.interface";
+import { withTransaction } from "../utils/database.utils";
 
 export class ProductService {
   constructor(
@@ -38,16 +41,6 @@ export class ProductService {
     return await this.productRepository.findByCategory(categoryId);
   }
 
-  async searchProductsByName(name: string) {
-    if (!name || name.trim().length < 2) {
-      throw ErrorFactory.badRequest(
-        "El nombre debe tener al menos 2 caracteres"
-      );
-    }
-
-    return await this.productRepository.findByName(name.trim());
-  }
-
   async createProduct(productName: string, categoryId: number) {
     if (!productName || productName.trim().length === 0) {
       throw ErrorFactory.badRequest("El nombre del producto es requerido");
@@ -57,35 +50,32 @@ export class ProductService {
     if (!categoryExists) {
       throw ErrorFactory.notFound(`Categoría con ID ${categoryId} no existe`);
     }
+    const trimmedName = productName.trim();
 
-    return await this.productRepository.create(productName.trim(), categoryId);
-  }
+    try {
+      await withTransaction(async (conn) => {
+        return await this.productRepository.create(
+          trimmedName,
+          categoryId,
+          conn
+        );
+      });
 
-  async updateProductName(id: number, name: string) {
-    if (!name || name.trim().length === 0) {
-      throw ErrorFactory.badRequest("El nombre del producto es requerido");
+      secureLogger.info("Product created successfully", {
+        name: trimmedName,
+        categoryId,
+      });
+    } catch (error) {
+      secureLogger.error("Error creating product", error, {
+        name: trimmedName,
+        categoryId,
+      });
+      if (error instanceof AppError) {
+        throw error;
+      }
+
+      throw ErrorFactory.internal("Error al crear el producto");
     }
-
-    const productExists = await this.productRepository.exists(id);
-    if (!productExists) {
-      throw ErrorFactory.notFound(`Producto con ID ${id} no encontrado`);
-    }
-
-    await this.productRepository.updateName(id, name.trim());
-  }
-
-  async updateProductCategory(id: number, categoryId: number) {
-    const productExists = await this.productRepository.exists(id);
-    if (!productExists) {
-      throw ErrorFactory.notFound(`Producto con ID ${id} no encontrado`);
-    }
-
-    const categoryExists = await this.categoryRepository.exists(categoryId);
-    if (!categoryExists) {
-      throw ErrorFactory.notFound(`Categoría con ID ${categoryId} no existe`);
-    }
-
-    await this.productRepository.updateCategory(id, categoryId);
   }
 
   async deleteProduct(id: number) {
@@ -93,17 +83,21 @@ export class ProductService {
     if (!productExists) {
       throw ErrorFactory.notFound(`Producto con ID ${id} no encontrado`);
     }
+    try {
+      await withTransaction(async (conn) => {
+        await this.productRepository.delete(id, conn);
+        secureLogger.info("Product deleted successfully", { id });
+      });
+    } catch (error) {
+      secureLogger.error("Error deleting product", error, {
+        id,
+      });
+      if (error instanceof AppError) {
+        throw error;
+      }
 
-    await this.productRepository.delete(id);
-  }
-
-  async getProductCountByCategory(categoryId: number) {
-    const categoryExists = await this.categoryRepository.exists(categoryId);
-    if (!categoryExists) {
-      throw ErrorFactory.notFound(`Categoría con ID ${categoryId} no existe`);
+      throw ErrorFactory.internal("Error al eliminar el producto");
     }
-
-    return await this.productRepository.countByCategory(categoryId);
   }
 
   async getProductsCategory() {
@@ -133,24 +127,24 @@ export class ProductService {
   }
 
   async createCategory(categoryName: string) {
-    if (!categoryName || categoryName.trim().length === 0) {
+    const categoryNameTrimmed = categoryName.trim();
+    if (!categoryName || categoryNameTrimmed.length === 0) {
       throw ErrorFactory.badRequest("El nombre de la categoría es requerido");
     }
+    try {
+      await withTransaction(async (conn) => {
+        await this.categoryRepository.create(categoryNameTrimmed, conn);
+      });
+    } catch (error) {
+      secureLogger.error("Error creating category", error, {
+        categoryName,
+      });
+      if (error instanceof AppError) {
+        throw error;
+      }
 
-    return await this.categoryRepository.create(categoryName.trim());
-  }
-
-  async updateCategoryName(id: number, name: string) {
-    if (!name || name.trim().length === 0) {
-      throw ErrorFactory.badRequest("El nombre de la categoría es requerido");
+      throw ErrorFactory.internal("Error al crear la categoria");
     }
-
-    const categoryExists = await this.categoryRepository.exists(id);
-    if (!categoryExists) {
-      throw ErrorFactory.notFound(`Categoría con ID ${id} no encontrada`);
-    }
-
-    await this.categoryRepository.updateName(id, name.trim());
   }
 
   async deleteCategory(id: number) {
@@ -158,7 +152,19 @@ export class ProductService {
     if (!categoryExists) {
       throw ErrorFactory.notFound(`Categoría con ID ${id} no encontrada`);
     }
+    try {
+      await withTransaction(async (conn) => {
+        await this.categoryRepository.delete(id, conn);
+      });
+    } catch (error) {
+      secureLogger.error("Error deleting category", error, {
+        id,
+      });
+      if (error instanceof AppError) {
+        throw error;
+      }
 
-    await this.categoryRepository.delete(id);
+      throw ErrorFactory.internal("Error al eliminar la categoria");
+    }
   }
 }

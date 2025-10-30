@@ -1,5 +1,7 @@
+import { ResultSetHeader } from "mysql2";
 import { CategoryResponseDTO, ProductResponseDTO } from "../dtos/product.dto";
 import { IBaseRepository } from "./repository.interface";
+import { PoolConnection } from "mysql2/promise";
 
 export interface IProductRepository extends IBaseRepository {
   findAll(): Promise<ProductResponseDTO[]>;
@@ -10,19 +12,13 @@ export interface IProductRepository extends IBaseRepository {
 
   findByName(name: string): Promise<ProductResponseDTO[]>;
 
-  create(name: string, categoryId: number): Promise<void>;
+  create(name: string, categoryId: number, conn: PoolConnection): Promise<void>;
 
-  updateName(id: number, name: string): Promise<void>;
-
-  updateCategory(id: number, categoryId: number): Promise<void>;
-
-  delete(id: number): Promise<void>;
+  delete(id: number, conn: PoolConnection): Promise<void>;
 
   exists(id: number): Promise<boolean>;
 
-  existsByName(name: string): Promise<boolean>;
-
-  countByCategory(categoryId: number): Promise<number>;
+  existsInCategory(name: string, categoryId: number): Promise<boolean>;
 }
 
 export interface ICategoryRepository extends IBaseRepository {
@@ -32,11 +28,9 @@ export interface ICategoryRepository extends IBaseRepository {
 
   findByName(name: string): Promise<CategoryResponseDTO | null>;
 
-  create(name: string): Promise<void>;
+  create(name: string, conn: PoolConnection): Promise<void>;
 
-  updateName(id: number, name: string): Promise<void>;
-
-  delete(id: number): Promise<void>;
+  delete(id: number, conn: PoolConnection): Promise<void>;
 
   exists(id: number): Promise<boolean>;
 

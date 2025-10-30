@@ -8,7 +8,6 @@ import {
   IProductRepository,
 } from "../interfaces/product.interface";
 import { secureLogger } from "../config/logger";
-import { withTransaction } from "../utils/database.utils";
 
 export class ProductRepository implements IProductRepository {
   async getConnection(): Promise<PoolConnection> {
@@ -103,154 +102,72 @@ export class ProductRepository implements IProductRepository {
     }
   }
 
-  async create(name: string, categoryId: number): Promise<void> {
-    return withTransaction(async (conn) => {
-      const [existing] = await conn.query<RowDataPacket[]>(
-        "SELECT id FROM producto WHERE nombre = ? AND categoria_id = ? LIMIT 1",
-        [name, categoryId]
-      );
-
-      if (existing.length > 0) {
-        throw ErrorFactory.badRequest(
-          `Ya existe un producto con el nombre "${name}" en esta categoría`
-        );
-      }
-
-      await conn.query(
-        "INSERT INTO producto(nombre, categoria_id) VALUES (?, ?)",
-        [name, categoryId]
-      );
-
-      secureLogger.info("Product created successfully", { name, categoryId });
-    });
+  async create(
+    name: string,
+    categoryId: number,
+    conn: PoolConnection
+  ): Promise<void> {
+    await conn.query(
+      "INSERT INTO producto(nombre, categoria_id) VALUES (?, ?)",
+      [name, categoryId]
+    );
   }
+  // async create(name: string, categoryId: number): Promise<void> {
+  //   return withTransaction(async (conn) => {
+  //     const [existing] = await conn.query<RowDataPacket[]>(
+  //       "SELECT id FROM producto WHERE nombre = ? AND categoria_id = ? LIMIT 1",
+  //       [name, categoryId]
+  //     );
 
-  async updateName(id: number, name: string): Promise<void> {
-    const conn = await this.getConnection();
+  //     if (existing.length > 0) {
+  //       throw ErrorFactory.badRequest(
+  //         `Ya existe un producto con el nombre "${name}" en esta categoría`
+  //       );
+  //     }
 
-    try {
-      await conn.beginTransaction();
+  //     await conn.query(
+  //       "INSERT INTO producto(nombre, categoria_id) VALUES (?, ?)",
+  //       [name, categoryId]
+  //     );
 
-      const [existing] = await conn.query<RowDataPacket[]>(
-        `SELECT id FROM producto 
-         WHERE nombre = ? 
-         AND categoria_id = (SELECT categoria_id FROM producto WHERE id = ?)
-         AND id != ?
-         LIMIT 1`,
-        [name, id, id]
-      );
+  //     secureLogger.info("Product created successfully", { name, categoryId });
+  //   });
+  // }
 
-      if (existing.length > 0) {
-        throw ErrorFactory.badRequest(
-          `Ya existe otro producto con el nombre "${name}" en esta categoría`
-        );
-      }
-
-      const [result] = await conn.query<ResultSetHeader>(
-        "UPDATE producto SET nombre = ? WHERE id = ?",
-        [name, id]
-      );
-
-      if (result.affectedRows === 0) {
-        throw ErrorFactory.notFound(`Producto con ID ${id} no encontrado`);
-      }
-
-      await conn.commit();
-
-      secureLogger.info("Product name updated successfully", { id, name });
-    } catch (error) {
-      await conn.rollback();
-      if (error instanceof AppError) {
-        throw error;
-      }
-      secureLogger.error("Error updating product name", error, { id, name });
-      throw ErrorFactory.internal("Error al actualizar el nombre del producto");
-    } finally {
-      conn.release();
-    }
+  async delete(id: number, conn: PoolConnection): Promise<void> {
+    await conn.query<ResultSetHeader>("DELETE FROM producto WHERE id = ?", [
+      id,
+    ]);
   }
+  // async delete(id: number): Promise<void> {
+  //   const conn = await this.getConnection();
 
-  async updateCategory(id: number, categoryId: number): Promise<void> {
-    const conn = await this.getConnection();
+  //   try {
+  //     await conn.beginTransaction();
 
-    try {
-      await conn.beginTransaction();
+  //     const [result] = await conn.query<ResultSetHeader>(
+  //       "DELETE FROM producto WHERE id = ?",
+  //       [id]
+  //     );
 
-      const [existing] = await conn.query<RowDataPacket[]>(
-        `SELECT p2.id FROM producto p1
-         INNER JOIN producto p2 ON p1.nombre = p2.nombre
-         WHERE p1.id = ? AND p2.categoria_id = ? AND p2.id != ?
-         LIMIT 1`,
-        [id, categoryId, id]
-      );
+  //     if (result.affectedRows === 0) {
+  //       throw ErrorFactory.notFound(`Producto con ID ${id} no encontrado`);
+  //     }
 
-      if (existing.length > 0) {
-        throw ErrorFactory.badRequest(
-          "Ya existe un producto con el mismo nombre en la categoría destino"
-        );
-      }
+  //     await conn.commit();
 
-      const [result] = await conn.query<ResultSetHeader>(
-        "UPDATE producto SET categoria_id = ? WHERE id = ?",
-        [categoryId, id]
-      );
-
-      if (result.affectedRows === 0) {
-        throw ErrorFactory.notFound(`Producto con ID ${id} no encontrado`);
-      }
-
-      await conn.commit();
-
-      secureLogger.info("Product category updated successfully", {
-        id,
-        categoryId,
-      });
-    } catch (error) {
-      await conn.rollback();
-      if (error instanceof AppError) {
-        throw error;
-      }
-      secureLogger.error("Error updating product category", error, {
-        id,
-        categoryId,
-      });
-      throw ErrorFactory.internal(
-        "Error al actualizar la categoría del producto"
-      );
-    } finally {
-      conn.release();
-    }
-  }
-
-  async delete(id: number): Promise<void> {
-    const conn = await this.getConnection();
-
-    try {
-      await conn.beginTransaction();
-
-      const [result] = await conn.query<ResultSetHeader>(
-        "DELETE FROM producto WHERE id = ?",
-        [id]
-      );
-
-      if (result.affectedRows === 0) {
-        throw ErrorFactory.notFound(`Producto con ID ${id} no encontrado`);
-      }
-
-      await conn.commit();
-
-      secureLogger.info("Product deleted successfully", { id });
-    } catch (error) {
-      await conn.rollback();
-      if (error instanceof AppError) {
-        throw error;
-      }
-      secureLogger.error("Error deleting product", error, { id });
-      throw ErrorFactory.internal("Error al eliminar el producto");
-    } finally {
-      conn.release();
-    }
-  }
+  //     secureLogger.info("Product deleted successfully", { id });
+  //   } catch (error) {
+  //     await conn.rollback();
+  //     if (error instanceof AppError) {
+  //       throw error;
+  //     }
+  //     secureLogger.error("Error deleting product", error, { id });
+  //     throw ErrorFactory.internal("Error al eliminar el producto");
+  //   } finally {
+  //     conn.release();
+  //   }
+  // }
 
   async exists(id: number): Promise<boolean> {
     try {
@@ -266,35 +183,25 @@ export class ProductRepository implements IProductRepository {
     }
   }
 
-  async existsByName(name: string): Promise<boolean> {
+  async existsInCategory(name: string, categoryId: number): Promise<boolean> {
     try {
       const [rows] = await db.query<RowDataPacket[]>(
-        "SELECT id FROM producto WHERE nombre = ? LIMIT 1",
-        [name]
+        "SELECT id FROM producto WHERE nombre = ? AND categoria_id = ? LIMIT ",
+        [name, categoryId]
       );
 
       return rows.length > 0;
     } catch (error) {
-      secureLogger.error("Error checking product existence by name", error, {
-        name,
-      });
-      throw ErrorFactory.internal("Error al verificar existencia del producto");
-    }
-  }
-
-  async countByCategory(categoryId: number): Promise<number> {
-    try {
-      const [rows] = await db.query<RowDataPacket[]>(
-        "SELECT COUNT(*) as total FROM producto WHERE categoria_id = ?",
-        [categoryId]
+      secureLogger.error(
+        "Error checking product existence in category",
+        error,
+        {
+          name,
+        }
       );
-
-      return rows[0].total as number;
-    } catch (error) {
-      secureLogger.error("Error counting products by category", error, {
-        categoryId,
-      });
-      throw ErrorFactory.internal("Error al contar productos por categoría");
+      throw ErrorFactory.internal(
+        "Error al verificar existencia del producto en la categoria"
+      );
     }
   }
 }
@@ -362,123 +269,89 @@ export class CategoryRepository implements ICategoryRepository {
     }
   }
 
-  async create(name: string): Promise<void> {
-    const conn = await this.getConnection();
-
-    try {
-      await conn.beginTransaction();
-
-      const [existing] = await conn.query<RowDataPacket[]>(
-        "SELECT id FROM categoria WHERE nombre = ? LIMIT 1",
-        [name]
-      );
-
-      if (existing.length > 0) {
-        throw ErrorFactory.badRequest(
-          `Ya existe una categoría con el nombre "${name}"`
-        );
-      }
-
-      await conn.query("INSERT INTO categoria(nombre) VALUES (?)", [name]);
-
-      await conn.commit();
-
-      secureLogger.info("Category created successfully", { name });
-    } catch (error) {
-      await conn.rollback();
-      if (error instanceof AppError) {
-        throw error;
-      }
-      secureLogger.error("Error creating category", error, { name });
-      throw ErrorFactory.internal("Error al crear la categoría");
-    } finally {
-      conn.release();
-    }
+  async create(name: string, conn: PoolConnection): Promise<void> {
+    await conn.query("INSERT INTO categoria(nombre) VALUES (?)", [name]);
   }
 
-  async updateName(id: number, name: string): Promise<void> {
-    const conn = await this.getConnection();
+  // async create(name: string): Promise<void> {
+  //   const conn = await this.getConnection();
 
-    try {
-      await conn.beginTransaction();
+  //   try {
+  //     await conn.beginTransaction();
 
-      const [existing] = await conn.query<RowDataPacket[]>(
-        "SELECT id FROM categoria WHERE nombre = ? AND id != ? LIMIT 1",
-        [name, id]
-      );
+  //     const [existing] = await conn.query<RowDataPacket[]>(
+  //       "SELECT id FROM categoria WHERE nombre = ? LIMIT 1",
+  //       [name]
+  //     );
 
-      if (existing.length > 0) {
-        throw ErrorFactory.badRequest(
-          `Ya existe otra categoría con el nombre "${name}"`
-        );
-      }
+  //     if (existing.length > 0) {
+  //       throw ErrorFactory.badRequest(
+  //         `Ya existe una categoría con el nombre "${name}"`
+  //       );
+  //     }
 
-      const [result] = await conn.query<ResultSetHeader>(
-        "UPDATE categoria SET nombre = ? WHERE id = ?",
-        [name, id]
-      );
+  //     await conn.query("INSERT INTO categoria(nombre) VALUES (?)", [name]);
 
-      if (result.affectedRows === 0) {
-        throw ErrorFactory.notFound(`Categoría con ID ${id} no encontrada`);
-      }
+  //     await conn.commit();
 
-      await conn.commit();
+  //     secureLogger.info("Category created successfully", { name });
+  //   } catch (error) {
+  //     await conn.rollback();
+  //     if (error instanceof AppError) {
+  //       throw error;
+  //     }
+  //     secureLogger.error("Error creating category", error, { name });
+  //     throw ErrorFactory.internal("Error al crear la categoría");
+  //   } finally {
+  //     conn.release();
+  //   }
+  // }
 
-      secureLogger.info("Category name updated successfully", { id, name });
-    } catch (error) {
-      await conn.rollback();
-      if (error instanceof AppError) {
-        throw error;
-      }
-      secureLogger.error("Error updating category name", error, { id, name });
-      throw ErrorFactory.internal(
-        "Error al actualizar el nombre de la categoría"
-      );
-    } finally {
-      conn.release();
-    }
+  async delete(id: number, conn: PoolConnection): Promise<void> {
+    await conn.query<ResultSetHeader>("DELETE FROM categoria WHERE id = ?", [
+      id,
+    ]);
   }
+  // async delete(id: number): Promise<void> {
+  //   const conn = await this.getConnection();
 
-  async delete(id: number): Promise<void> {
-    const conn = await this.getConnection();
+  //   try {
+  //     await conn.beginTransaction();
 
-    try {
-      await conn.beginTransaction();
+  //     const [products] = await conn.query<RowDataPacket[]>(
+  //       "SELECT COUNT(*) as total FROM producto WHERE categoria_id = ?",
+  //       [id]
+  //     );
 
-      const [products] = await conn.query<RowDataPacket[]>(
-        "SELECT COUNT(*) as total FROM producto WHERE categoria_id = ?",
-        [id]
-      );
+  //     if (products[0].total > 0) {
+  //       throw ErrorFactory.badRequest(
+  //         `No se puede eliminar la categoría porque tiene ${products[0].total} producto(s) asociado(s)`
+  //       );
+  //     }
 
-      if (products[0].total > 0) {
-        throw ErrorFactory.badRequest(
-          `No se puede eliminar la categoría porque tiene ${products[0].total} producto(s) asociado(s)`
-        );
-      }
+  //     const [result] = await conn.query<ResultSetHeader>(
+  //       "DELETE FROM categoria WHERE id = ?",
+  //       [id]
+  //     );
 
-      const [result] = await conn.query<ResultSetHeader>(
-        "DELETE FROM categoria WHERE id = ?",
-        [id]
-      );
+  //     if (result.affectedRows === 0) {
+  //       throw ErrorFactory.notFound(`Categoría con ID ${id} no encontrada`);
+  //     }
 
-      if (result.affectedRows === 0) {
-        throw ErrorFactory.notFound(`Categoría con ID ${id} no encontrada`);
-      }
+  //     await conn.commit();
 
-      await conn.commit();
-
-      secureLogger.info("Category deleted successfully", { id });
-    } catch (error) {
-      await conn.rollback();
-      if (error instanceof AppError) {
-        throw error;
-      }
-      secureLogger.error("Error deleting category", error, { id });
-      throw ErrorFactory.internal("Error al eliminar la categoría");
-    } finally {
-      conn.release();
-    }
-  }
+  //     secureLogger.info("Category deleted successfully", { id });
+  //   } catch (error) {
+  //     await conn.rollback();
+  //     if (error instanceof AppError) {
+  //       throw error;
+  //     }
+  //     secureLogger.error("Error deleting category", error, { id });
+  //     throw ErrorFactory.internal("Error al eliminar la categoría");
+  //   } finally {
+  //     conn.release();
+  //   }
+  // }
 
   async exists(id: number): Promise<boolean> {
     try {
