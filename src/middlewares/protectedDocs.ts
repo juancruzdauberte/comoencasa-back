@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { ErrorFactory } from "../errors/errorFactory";
 import { secureLogger } from "../config/logger";
 import { verifyRefreshToken } from "../utils/utils";
-import { Payload } from "../types/types";
+import { TokenPayloadDTO } from "../dtos/auth.dto";
 
 export default function protectedDocs(
   req: Request,
@@ -18,7 +18,7 @@ export default function protectedDocs(
       return next(ErrorFactory.unauthorized("Refresh token no encontrado"));
     }
 
-    const user = verifyRefreshToken(refreshToken) as Payload;
+    const user = verifyRefreshToken(refreshToken) as TokenPayloadDTO;
 
     if (!user || !user.email || !user.rol) {
       secureLogger.warn("Invalid refresh token payload", {

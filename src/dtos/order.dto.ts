@@ -1,5 +1,3 @@
-// ==================== REQUEST DTOs ====================
-
 export interface CreateOrderRequestDTO {
   domicilio: string;
   hora_entrega: string;
@@ -30,8 +28,6 @@ export interface AddProductToOrderRequestDTO {
 export interface UpdateProductQuantityRequestDTO {
   cantidad: number;
 }
-
-// ==================== RESPONSE DTOs ====================
 
 export interface OrderResponseDTO {
   id: number;
@@ -65,19 +61,13 @@ export interface PaginationDTO {
   totalPages: number;
 }
 
-// ==================== INTERNAL DTOs ====================
-
 export interface ProductCreateOrderDTO {
   producto_id: number;
   cantidad: number;
 }
 
-// ==================== TYPES ====================
-
 export type OrderStatus = "preparando" | "listo" | "entregado" | "cancelado";
 export type PaymentMethod = "efectivo" | "transferencia";
-
-// ==================== QUERY DTOs ====================
 
 export interface OrderQueryParamsDTO {
   filter?: string;

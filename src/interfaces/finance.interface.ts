@@ -1,9 +1,8 @@
 import {
   AmountResponseDTO,
-  DeliveryAmountResponseDTO,
   FinanceParamResponseDTO,
-} from '../dtos/finance.dto';
-import { IBaseRepository } from './repository.interface';
+} from "../dtos/finance.dto";
+import { IBaseRepository } from "./repository.interface";
 
 export interface IFinanceRepository extends IBaseRepository {
   getAmountToday(): Promise<AmountResponseDTO>;
@@ -21,7 +20,7 @@ export interface IFinanceRepository extends IBaseRepository {
 
   getCashAmountMonthly(month: number, year: number): Promise<AmountResponseDTO>;
 
-  getDeliveryAmountToPay(): Promise<DeliveryAmountResponseDTO>;
+  getDeliveryAmountToPay(): Promise<AmountResponseDTO>;
 
   getDeliveryCashAmount(): Promise<AmountResponseDTO>;
 

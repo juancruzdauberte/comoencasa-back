@@ -8,6 +8,7 @@ import { ErrorFactory } from "../errors/errorFactory";
 import { AppError } from "../errors/errors";
 import { IFinanceRepository } from "../interfaces/finance.interface";
 import { secureLogger } from "../config/logger";
+import { withTransaction } from "../utils/database.utils";
 
 export class FinanceRepository implements IFinanceRepository {
   async getConnection(): Promise<PoolConnection> {
@@ -172,12 +173,10 @@ export class FinanceRepository implements IFinanceRepository {
 
   async getDeliveryAmountToPay(): Promise<AmountResponseDTO> {
     try {
-      // Los stored procedures retornan el resultado en rows[0]
       const [rows] = await db.query<RowDataPacket[][]>(
         "CALL calcular_total_motoquero()"
       );
 
-      // El resultado del SP está en rows[0][0]
       if (!rows || !rows[0] || rows[0].length === 0) {
         throw ErrorFactory.internal(
           "Error al obtener el monto a pagar al delivery"
@@ -251,11 +250,7 @@ export class FinanceRepository implements IFinanceRepository {
     value: number,
     paramName: string
   ): Promise<void> {
-    const conn = await this.getConnection();
-
-    try {
-      await conn.beginTransaction();
-
+    return withTransaction(async (conn) => {
       const [result] = await conn.query<ResultSetHeader>(
         "UPDATE parametrosfinancieros pf SET pf.valor = ? WHERE pf.nombreParametro = ?",
         [value, paramName]
@@ -267,26 +262,10 @@ export class FinanceRepository implements IFinanceRepository {
         );
       }
 
-      await conn.commit();
-
       secureLogger.info("Finance param updated successfully", {
         paramName,
         value,
       });
-    } catch (error) {
-      await conn.rollback();
-      if (error instanceof AppError) {
-        throw error;
-      }
-      secureLogger.error("Error updating finance param", error, {
-        paramName,
-        value,
-      });
-      throw ErrorFactory.internal(
-        "Error al actualizar el parámetro financiero"
-      );
-    } finally {
-      conn.release();
-    }
+    });
   }
 }

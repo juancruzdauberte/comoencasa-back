@@ -1,5 +1,3 @@
-// ==================== REQUEST DTOs ====================
-
 export interface CreateProductRequestDTO {
   nombre: string;
   categoria_id: number;
@@ -12,8 +10,6 @@ export interface CreateCategoryRequestDTO {
 export interface ProductQueryParamsDTO {
   category?: string;
 }
-
-// ==================== RESPONSE DTOs ====================
 
 export interface ProductResponseDTO {
   id: number;
@@ -32,8 +28,6 @@ export interface ProductsByCategoryResponseDTO {
   nombre: string;
   categoria: string;
 }
-
-// ==================== INTERNAL DTOs ====================
 
 export interface ProductCreateOrderDTO {
   producto_id: number;

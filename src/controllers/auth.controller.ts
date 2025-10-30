@@ -5,11 +5,6 @@ import { ErrorFactory } from "../errors/errorFactory";
 import { generateAccessToken, verifyRefreshToken } from "../utils/utils";
 import { secureLogger } from "../config/logger";
 
-// 7 días
-/**
- * Callback de autenticación de Google OAuth
- * Establece refresh token en cookie httpOnly
- */
 export function googleCallback(
   req: Request,
   res: Response,
@@ -35,7 +30,6 @@ export function googleCallback(
       throw ErrorFactory.internal("Error en la autenticación de Google");
     }
 
-    // Establecer refresh token en cookie httpOnly
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: config.NODE_ENV === "production" ? true : false,
@@ -48,8 +42,6 @@ export function googleCallback(
       rol: user.rol,
     });
 
-    // Redirigir con access token en URL (temporal)
-    // NOTA: En producción, considerar usar solo cookies para ambos tokens
     res.redirect(`${config.CLIENT_URL}/auth-success?token=${accessToken}`);
   } catch (error) {
     secureLogger.error("Error in Google OAuth callback", error);
@@ -57,10 +49,6 @@ export function googleCallback(
   }
 }
 
-/**
- * Endpoint para refrescar el access token usando refresh token
- * Protegido con rate limiting
- */
 export async function refreshToken(
   req: Request,
   res: Response,
@@ -76,10 +64,8 @@ export async function refreshToken(
   }
 
   try {
-    // Verificar refresh token
     const user = verifyRefreshToken(refreshToken) as TokenPayloadDTO;
 
-    // Validar estructura del payload
     if (!user || !user.email || !user.rol) {
       secureLogger.warn("Invalid refresh token payload", {
         ip: req.ip,
@@ -87,7 +73,6 @@ export async function refreshToken(
       return next(ErrorFactory.unauthorized("Token inválido"));
     }
 
-    // Generar nuevo access token
     const accessToken = generateAccessToken({
       rol: user.rol,
       email: user.email,
@@ -108,15 +93,10 @@ export async function refreshToken(
   }
 }
 
-/**
- * Endpoint para cerrar sesión
- * Limpia el refresh token de las cookies
- */
 export async function logOut(req: Request, res: Response, next: NextFunction) {
   try {
     const userEmail = (req.user as any)?.email;
 
-    // Limpiar cookie de refresh token
     res.clearCookie("refreshToken");
 
     secureLogger.info("User logged out successfully", {
@@ -134,9 +114,6 @@ export async function logOut(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-/**
- * Maneja fallos de autenticación de Google
- */
 export async function failure(req: Request, res: Response, next: NextFunction) {
   try {
     secureLogger.warn("Google OAuth authentication failed", {
@@ -150,10 +127,6 @@ export async function failure(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-/**
- * Endpoint para obtener información del usuario actual
- * Requiere autenticación
- */
 export async function getCurrentUser(
   req: Request,
   res: Response,
@@ -166,7 +139,6 @@ export async function getCurrentUser(
       return next(ErrorFactory.unauthorized("Usuario no autenticado"));
     }
 
-    // Retornar solo información pública del usuario
     res.json({
       email: user.email,
       rol: user.rol,

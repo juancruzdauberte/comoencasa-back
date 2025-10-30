@@ -8,6 +8,7 @@ import {
   IProductRepository,
 } from "../interfaces/product.interface";
 import { secureLogger } from "../config/logger";
+import { withTransaction } from "../utils/database.utils";
 
 export class ProductRepository implements IProductRepository {
   async getConnection(): Promise<PoolConnection> {
@@ -103,12 +104,7 @@ export class ProductRepository implements IProductRepository {
   }
 
   async create(name: string, categoryId: number): Promise<void> {
-    const conn = await this.getConnection();
-
-    try {
-      await conn.beginTransaction();
-
-      // Verificar si ya existe un producto con ese nombre en la misma categoría
+    return withTransaction(async (conn) => {
       const [existing] = await conn.query<RowDataPacket[]>(
         "SELECT id FROM producto WHERE nombre = ? AND categoria_id = ? LIMIT 1",
         [name, categoryId]
@@ -121,26 +117,12 @@ export class ProductRepository implements IProductRepository {
       }
 
       await conn.query(
-        "INSERT INTO producto(nombre, categoria_id) VALUES (?, ?);",
+        "INSERT INTO producto(nombre, categoria_id) VALUES (?, ?)",
         [name, categoryId]
       );
 
-      await conn.commit();
-
-      secureLogger.info("Product created successfully", {
-        name,
-        categoryId,
-      });
-    } catch (error) {
-      await conn.rollback();
-      if (error instanceof AppError) {
-        throw error;
-      }
-      secureLogger.error("Error creating product", error, { name, categoryId });
-      throw ErrorFactory.internal("Error al crear el producto");
-    } finally {
-      conn.release();
-    }
+      secureLogger.info("Product created successfully", { name, categoryId });
+    });
   }
 
   async updateName(id: number, name: string): Promise<void> {
@@ -149,7 +131,6 @@ export class ProductRepository implements IProductRepository {
     try {
       await conn.beginTransaction();
 
-      // Verificar que no exista otro producto con el mismo nombre en la misma categoría
       const [existing] = await conn.query<RowDataPacket[]>(
         `SELECT id FROM producto 
          WHERE nombre = ? 
@@ -195,7 +176,6 @@ export class ProductRepository implements IProductRepository {
     try {
       await conn.beginTransaction();
 
-      // Verificar que no exista otro producto con el mismo nombre en la nueva categoría
       const [existing] = await conn.query<RowDataPacket[]>(
         `SELECT p2.id FROM producto p1
          INNER JOIN producto p2 ON p1.nombre = p2.nombre
@@ -317,19 +297,6 @@ export class ProductRepository implements IProductRepository {
       throw ErrorFactory.internal("Error al contar productos por categoría");
     }
   }
-
-  async count(): Promise<number> {
-    try {
-      const [rows] = await db.query<RowDataPacket[]>(
-        "SELECT COUNT(*) as total FROM producto"
-      );
-
-      return rows[0].total as number;
-    } catch (error) {
-      secureLogger.error("Error counting products", error);
-      throw ErrorFactory.internal("Error al contar productos");
-    }
-  }
 }
 
 export class CategoryRepository implements ICategoryRepository {
@@ -401,7 +368,6 @@ export class CategoryRepository implements ICategoryRepository {
     try {
       await conn.beginTransaction();
 
-      // Verificar si ya existe una categoría con ese nombre
       const [existing] = await conn.query<RowDataPacket[]>(
         "SELECT id FROM categoria WHERE nombre = ? LIMIT 1",
         [name]
@@ -436,7 +402,6 @@ export class CategoryRepository implements ICategoryRepository {
     try {
       await conn.beginTransaction();
 
-      // Verificar que no exista otra categoría con el mismo nombre
       const [existing] = await conn.query<RowDataPacket[]>(
         "SELECT id FROM categoria WHERE nombre = ? AND id != ? LIMIT 1",
         [name, id]
@@ -480,7 +445,6 @@ export class CategoryRepository implements ICategoryRepository {
     try {
       await conn.beginTransaction();
 
-      // Verificar si hay productos asociados a esta categoría
       const [products] = await conn.query<RowDataPacket[]>(
         "SELECT COUNT(*) as total FROM producto WHERE categoria_id = ?",
         [id]
@@ -547,19 +511,6 @@ export class CategoryRepository implements ICategoryRepository {
       throw ErrorFactory.internal(
         "Error al verificar existencia de la categoría"
       );
-    }
-  }
-
-  async count(): Promise<number> {
-    try {
-      const [rows] = await db.query<RowDataPacket[]>(
-        "SELECT COUNT(*) as total FROM categoria"
-      );
-
-      return rows[0].total as number;
-    } catch (error) {
-      secureLogger.error("Error counting categories", error);
-      throw ErrorFactory.internal("Error al contar categorías");
     }
   }
 }

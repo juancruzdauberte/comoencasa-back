@@ -1,5 +1,3 @@
-// ==================== RESPONSE DTOs ====================
-
 export interface AmountResponseDTO {
   total: number;
 }
@@ -7,8 +5,6 @@ export interface AmountResponseDTO {
 export interface FinanceParamResponseDTO {
   valor: number;
 }
-
-// ==================== REQUEST DTOs ====================
 
 export interface MonthlyQueryParamsDTO {
   month: number;

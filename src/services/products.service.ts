@@ -10,8 +10,6 @@ export class ProductService {
     private categoryRepository: ICategoryRepository
   ) {}
 
-  // ==================== PRODUCT METHODS ====================
-
   async getAllProducts() {
     return await this.productRepository.findAll();
   }
@@ -27,7 +25,6 @@ export class ProductService {
   }
 
   async getProductsByCategory(categoryId: string) {
-    // Validar que la categoría existe
     const categoryExists = await this.categoryRepository.exists(
       Number(categoryId)
     );
@@ -52,12 +49,10 @@ export class ProductService {
   }
 
   async createProduct(productName: string, categoryId: number) {
-    // Validar nombre
     if (!productName || productName.trim().length === 0) {
       throw ErrorFactory.badRequest("El nombre del producto es requerido");
     }
 
-    // Validar que la categoría existe
     const categoryExists = await this.categoryRepository.exists(categoryId);
     if (!categoryExists) {
       throw ErrorFactory.notFound(`Categoría con ID ${categoryId} no existe`);
@@ -67,12 +62,10 @@ export class ProductService {
   }
 
   async updateProductName(id: number, name: string) {
-    // Validar nombre
     if (!name || name.trim().length === 0) {
       throw ErrorFactory.badRequest("El nombre del producto es requerido");
     }
 
-    // Verificar que el producto existe
     const productExists = await this.productRepository.exists(id);
     if (!productExists) {
       throw ErrorFactory.notFound(`Producto con ID ${id} no encontrado`);
@@ -82,13 +75,11 @@ export class ProductService {
   }
 
   async updateProductCategory(id: number, categoryId: number) {
-    // Verificar que el producto existe
     const productExists = await this.productRepository.exists(id);
     if (!productExists) {
       throw ErrorFactory.notFound(`Producto con ID ${id} no encontrado`);
     }
 
-    // Verificar que la categoría existe
     const categoryExists = await this.categoryRepository.exists(categoryId);
     if (!categoryExists) {
       throw ErrorFactory.notFound(`Categoría con ID ${categoryId} no existe`);
@@ -106,10 +97,6 @@ export class ProductService {
     await this.productRepository.delete(id);
   }
 
-  async getProductCount() {
-    return await this.productRepository.count();
-  }
-
   async getProductCountByCategory(categoryId: number) {
     const categoryExists = await this.categoryRepository.exists(categoryId);
     if (!categoryExists) {
@@ -118,8 +105,6 @@ export class ProductService {
 
     return await this.productRepository.countByCategory(categoryId);
   }
-
-  // ==================== CATEGORY METHODS ====================
 
   async getProductsCategory() {
     return await this.categoryRepository.findAll();
@@ -148,7 +133,6 @@ export class ProductService {
   }
 
   async createCategory(categoryName: string) {
-    // Validar nombre
     if (!categoryName || categoryName.trim().length === 0) {
       throw ErrorFactory.badRequest("El nombre de la categoría es requerido");
     }
@@ -157,12 +141,10 @@ export class ProductService {
   }
 
   async updateCategoryName(id: number, name: string) {
-    // Validar nombre
     if (!name || name.trim().length === 0) {
       throw ErrorFactory.badRequest("El nombre de la categoría es requerido");
     }
 
-    // Verificar que la categoría existe
     const categoryExists = await this.categoryRepository.exists(id);
     if (!categoryExists) {
       throw ErrorFactory.notFound(`Categoría con ID ${id} no encontrada`);
@@ -178,9 +160,5 @@ export class ProductService {
     }
 
     await this.categoryRepository.delete(id);
-  }
-
-  async getCategoryCount() {
-    return await this.categoryRepository.count();
   }
 }

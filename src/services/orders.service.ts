@@ -28,12 +28,10 @@ export class OrderService {
     amount: number,
     clientSurname: string
   ) {
-    // Validaciones previas
     if (!products || products.length === 0) {
       throw ErrorFactory.badRequest("Debe incluir al menos un producto");
     }
 
-    // Validar todos los productos antes de iniciar transacción
     const invalidProducts = products.filter(
       (p) => !Number.isInteger(p.cantidad) || p.cantidad <= 0
     );
@@ -45,7 +43,6 @@ export class OrderService {
       );
     }
 
-    // Validar que todos los productos existen
     for (const product of products) {
       const exists = await this.orderRepository.productExists(
         product.producto_id
@@ -73,20 +70,17 @@ export class OrderService {
     productId: number,
     quantity: number
   ) {
-    // Validar cantidad
     if (!Number.isInteger(quantity) || quantity <= 0) {
       throw ErrorFactory.badRequest(
         "La cantidad debe ser un número mayor a cero."
       );
     }
 
-    // Verificar que el pedido existe
     const orderExists = await this.orderRepository.orderExists(orderId);
     if (!orderExists) {
       throw ErrorFactory.notFound(`Pedido con ID ${orderId} no existe`);
     }
 
-    // Verificar que el producto existe
     const productExists = await this.orderRepository.productExists(productId);
     if (!productExists) {
       throw ErrorFactory.notFound(`Producto con ID ${productId} no existe`);
@@ -126,7 +120,6 @@ export class OrderService {
     productId: number,
     quantity: number
   ) {
-    // Validar cantidad
     if (!Number.isInteger(quantity) || quantity <= 0) {
       throw ErrorFactory.badRequest("La cantidad debe ser mayor a cero");
     }
@@ -136,7 +129,6 @@ export class OrderService {
       throw ErrorFactory.notFound(`Pedido con ID ${orderId} no existe`);
     }
 
-    // Verificar que el producto existe en el pedido
     const productExistsInOrder =
       await this.orderRepository.productExistsInOrder(orderId, productId);
     if (!productExistsInOrder) {
@@ -163,13 +155,11 @@ export class OrderService {
     products: ProductCreateOrderDTO[],
     clientSurname: string
   ) {
-    // Validar existencia del pedido
     const orderExists = await this.orderRepository.orderExists(Number(orderId));
     if (!orderExists) {
       throw ErrorFactory.notFound(`Pedido con ID ${orderId} no existe`);
     }
 
-    // Validar todos los productos antes de actualizar
     for (const product of products) {
       if (!Number.isInteger(product.producto_id) || product.producto_id <= 0) {
         throw ErrorFactory.badRequest(
@@ -183,7 +173,6 @@ export class OrderService {
         );
       }
 
-      // Validar que el producto existe
       const productExists = await this.orderRepository.productExists(
         product.producto_id
       );

@@ -4,10 +4,6 @@ import { ErrorFactory } from "../errors/errorFactory";
 import { secureLogger } from "../config/logger";
 import jwt from "jsonwebtoken";
 
-/**
- * Middleware para autenticar requests con JWT
- * Valida formato Bearer token y verifica la firma
- */
 export function authenticateRequest(
   req: Request,
   res: Response,
@@ -15,7 +11,6 @@ export function authenticateRequest(
 ) {
   const { authorization } = req.headers;
 
-  // Validar presencia del header
   if (!authorization) {
     secureLogger.warn("Authentication attempt without authorization header", {
       ip: req.ip,
@@ -29,7 +24,6 @@ export function authenticateRequest(
     );
   }
 
-  // Validar formato "Bearer <token>"
   const parts = authorization.split(" ");
 
   if (parts.length !== 2) {
@@ -60,7 +54,6 @@ export function authenticateRequest(
     );
   }
 
-  // Validar que el token no esté vacío
   if (!token || token.trim().length === 0) {
     secureLogger.warn("Empty token provided", {
       ip: req.ip,
@@ -70,10 +63,8 @@ export function authenticateRequest(
   }
 
   try {
-    // Verificar el token
     const user = verifyAccessToken(token);
 
-    // Validar estructura del payload
     if (!user || typeof user !== "object") {
       secureLogger.warn("Invalid token payload structure", {
         ip: req.ip,
@@ -82,7 +73,6 @@ export function authenticateRequest(
       return next(ErrorFactory.unauthorized("Payload de token inválido"));
     }
 
-    // Validar que tenga los campos requeridos
     if (!("email" in user) || !("rol" in user)) {
       secureLogger.warn("Token payload missing required fields", {
         ip: req.ip,
@@ -91,7 +81,6 @@ export function authenticateRequest(
       return next(ErrorFactory.unauthorized("Token con estructura inválida"));
     }
 
-    // Agregar usuario al request
     req.user = user;
 
     secureLogger.debug("User authenticated successfully", {
@@ -101,7 +90,6 @@ export function authenticateRequest(
 
     next();
   } catch (error) {
-    // Manejo específico de errores de JWT
     if (error instanceof jwt.TokenExpiredError) {
       secureLogger.info("Expired token attempt", {
         ip: req.ip,
@@ -128,7 +116,6 @@ export function authenticateRequest(
       return next(ErrorFactory.unauthorized("Token aún no válido"));
     }
 
-    // Error desconocido
     secureLogger.error("Unknown authentication error", error, {
       ip: req.ip,
     });
@@ -137,10 +124,6 @@ export function authenticateRequest(
   }
 }
 
-/**
- * Middleware para verificar rol de usuario
- * Debe usarse después de authenticateRequest
- */
 export function requireRole(allowedRoles: string[]) {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user || typeof req.user !== "object" || !("rol" in req.user)) {

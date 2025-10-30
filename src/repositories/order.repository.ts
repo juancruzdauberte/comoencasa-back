@@ -5,7 +5,7 @@ import { ErrorFactory } from "../errors/errorFactory";
 import { AppError } from "../errors/errors";
 import { IOrderRepository } from "../interfaces/order.interface";
 import { StoredProcedureResultWithTotal } from "../interfaces/repository.interface";
-import { batchInsert } from "../utils/database.utils";
+import { batchInsert, withTransaction } from "../utils/database.utils";
 import { secureLogger } from "../config/logger";
 
 export class OrderRepository implements IOrderRepository {
@@ -60,7 +60,6 @@ export class OrderRepository implements IOrderRepository {
       throw ErrorFactory.internal("Error al obtener el pedido");
     }
   }
-
   async create(
     address: string,
     deliveryTime: string,
@@ -70,31 +69,24 @@ export class OrderRepository implements IOrderRepository {
     amount: number,
     clientSurname: string
   ): Promise<number> {
-    const conn = await this.getConnection();
-
-    try {
-      await conn.beginTransaction();
-
-      // Crear pedido
+    return withTransaction(async (conn) => {
       const [res] = await conn.query<RowDataPacket[][]>(
         "CALL crear_pedido(?,?,?,?)",
         [address, deliveryTime, observation, clientSurname]
       );
 
       const orderId = res[0][0]?.pedido_id;
-
       if (!orderId) {
         throw ErrorFactory.badRequest("Error al crear el pedido");
       }
+
       const payExists = await this.payExistsInOrder(orderId, conn);
       if (payExists === 0) {
         await conn.query(
-          "INSERT INTO pagocliente(pedido_id, metodoPago, monto) VALUES (?, ?, ?);",
+          "INSERT INTO pagocliente(pedido_id, metodoPago, monto) VALUES (?, ?, ?)",
           [orderId, payMethod, amount]
         );
       }
-
-      // Insertar productos en batch
       const productValues = products.map((p) => [
         orderId,
         p.producto_id,
@@ -108,23 +100,13 @@ export class OrderRepository implements IOrderRepository {
         productValues
       );
 
-      await conn.commit();
-
       secureLogger.info("Order created successfully", {
         orderId,
         productsCount: products.length,
       });
 
       return orderId;
-    } catch (error) {
-      await conn.rollback();
-      secureLogger.error("Error creating order", error, {
-        productsCount: products.length,
-      });
-      throw error;
-    } finally {
-      conn.release();
-    }
+    });
   }
 
   async addProduct(
@@ -265,19 +247,16 @@ export class OrderRepository implements IOrderRepository {
     try {
       await conn.beginTransaction();
 
-      // Actualizar pedido
       await conn.query(
         " UPDATE pedido AS p SET p.domicilio = ?, p.horaEntrega = ?, p.observacion = ?, p.estado = ?, p.apellido_cliente = ? WHERE p.id = ?",
         [address, deliveryTime, observation, state, clientSurame, orderId]
       );
 
-      // Actualizar pago
       await conn.query(
         "UPDATE pagocliente SET metodoPago = ?, monto = ? WHERE pedido_id = ?",
         [payMethod, amount, orderId]
       );
 
-      // Actualizar productos
       for (const product of products) {
         await conn.query("CALL actualizar_cantidad_producto(?, ?, ?)", [
           orderId,

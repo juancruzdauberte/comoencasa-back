@@ -39,10 +39,6 @@ interface Config {
   NODE_ENV: string;
 }
 
-/**
- * Valida que todas las variables de entorno requeridas estén presentes
- * @throws {Error} Si falta alguna variable requerida
- */
 function validateConfig(): Config {
   const requiredVars = [
     "PORT",
@@ -76,7 +72,6 @@ function validateConfig(): Config {
     );
   }
 
-  // Validaciones adicionales
   const jwtAccessSecret = process.env.JWT_SECRET_ACCESS_TOKEN!;
   const jwtRefreshSecret = process.env.JWT_SECRET_REFRESH_TOKEN!;
 

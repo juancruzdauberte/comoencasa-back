@@ -3,27 +3,20 @@ import { AppError } from "../errors/errors";
 import { secureLogger } from "../config/logger";
 import config from "../config/config";
 
-/**
- * Middleware global para manejo de errores
- * Registra errores de forma segura y devuelve respuestas apropiadas
- */
 export function errorHandler(
   err: unknown,
   req: Request,
   res: Response,
   next: NextFunction
 ) {
-  // Determinar si es un error conocido de la aplicación
   const isAppError = err instanceof AppError;
   const statusCode = isAppError ? err.status : 500;
 
-  // Determinar el mensaje de error
   let message: string;
 
   if (isAppError) {
     message = err.message;
   } else if (err instanceof Error) {
-    // En producción, no exponer mensajes de error internos
     message =
       config.NODE_ENV === "production"
         ? "Error interno del servidor"
@@ -32,9 +25,7 @@ export function errorHandler(
     message = "Error interno del servidor";
   }
 
-  // Logging según el tipo y severidad del error
   if (!isAppError || statusCode === 500) {
-    // Errores 500 o desconocidos: log completo
     secureLogger.error("Unhandled error occurred", err, {
       method: req.method,
       url: req.url,
@@ -43,7 +34,6 @@ export function errorHandler(
       userId: (req.user as any)?.email,
     });
   } else if (statusCode >= 400 && statusCode < 500) {
-    // Errores 4xx: log de información
     secureLogger.info(`Client error: ${statusCode} - ${message}`, {
       method: req.method,
       url: req.url,
@@ -52,13 +42,11 @@ export function errorHandler(
     });
   }
 
-  // Preparar respuesta de error
   const errorResponse: any = {
     error: message,
     statusCode,
   };
 
-  // En desarrollo, incluir información adicional
   if (config.NODE_ENV !== "production") {
     if (err instanceof Error) {
       errorResponse.stack = err.stack;
@@ -69,13 +57,9 @@ export function errorHandler(
     errorResponse.path = req.path;
   }
 
-  // Enviar respuesta
   res.status(statusCode).json(errorResponse);
 }
 
-/**
- * Middleware para manejar rutas no encontradas (404)
- */
 export function notFoundHandler(
   req: Request,
   res: Response,
@@ -94,10 +78,6 @@ export function notFoundHandler(
   });
 }
 
-/**
- * Middleware para capturar errores asíncronos
- * Útil para envolver route handlers
- */
 export function asyncHandler(
   fn: (req: Request, res: Response, next: NextFunction) => Promise<any>
 ) {
