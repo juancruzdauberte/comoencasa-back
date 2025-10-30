@@ -1,7 +1,7 @@
 // ==================== RESPONSE DTOs ====================
 
 export interface AmountResponseDTO {
-  monto_total: number;
+  total: number;
 }
 
 export interface DeliveryAmountResponseDTO {

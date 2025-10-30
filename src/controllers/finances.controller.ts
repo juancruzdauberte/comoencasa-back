@@ -5,7 +5,7 @@ import {
   MonthlyQueryParamsDTO,
   UpdateFinanceParamRequestDTO,
 } from "../dtos/finance.dto";
-import { FinanceRepository } from "../repositories";
+import { FinanceRepository } from "../repositories/finance.repository";
 
 const financeRepository = new FinanceRepository();
 const financeService = new FinanceService(financeRepository);

@@ -6,7 +6,10 @@ import {
   CreateProductRequestDTO,
   ProductQueryParamsDTO,
 } from "../dtos/product.dto";
-import { CategoryRepository, ProductRepository } from "../repositories";
+import {
+  CategoryRepository,
+  ProductRepository,
+} from "../repositories/product.repository";
 
 const productRepository = new ProductRepository();
 const cateogryRepository = new CategoryRepository();

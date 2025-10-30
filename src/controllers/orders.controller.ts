@@ -6,7 +6,7 @@ import {
   OrderQueryParamsDTO,
   UpdateOrderRequestDTO,
 } from "../dtos/order.dto";
-import { OrderRepository } from "../repositories";
+import { OrderRepository } from "../repositories/order.repository";
 
 const orderRepository = new OrderRepository();
 const orderService = new OrderService(orderRepository);

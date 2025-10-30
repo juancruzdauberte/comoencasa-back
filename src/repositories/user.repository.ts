@@ -14,15 +14,14 @@ export class UserRepository implements IUserRepository {
   async findByEmail(email: string): Promise<UserDTO | null> {
     try {
       const [rows] = await db.query<RowDataPacket[]>(
-        `CALL obtener_usuario(?)`,
+        `SELECT * FROM usuario u WHERE u.email = ?`,
         [email]
       );
 
       if (rows.length === 0) {
         return null;
       }
-
-      return rows[0][0];
+      return rows[0] as UserDTO;
     } catch (error) {
       if (error instanceof AppError) {
         throw error;

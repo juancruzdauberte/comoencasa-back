@@ -3,7 +3,7 @@ import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import config from "./config";
 import { generateAccessToken, generateRefreshToken } from "../utils/utils";
 import UserService from "../services/user.service";
-import { UserRepository } from "../repositories";
+import { UserRepository } from "../repositories/user.repository";
 
 export function configurePassport() {
   const userRepository = new UserRepository();

@@ -3,7 +3,7 @@ import { secureLogger } from "./logger";
 
 export const limiter = rateLimit({
   windowMs: 3 * 60 * 1000,
-  max: 100,
+  max: 150,
   message: "Demasiadas peticiones, intenta más tarde",
   standardHeaders: true,
   legacyHeaders: false,

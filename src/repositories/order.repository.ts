@@ -5,8 +5,8 @@ import { ErrorFactory } from "../errors/errorFactory";
 import { AppError } from "../errors/errors";
 import { IOrderRepository } from "../interfaces/order.interface";
 import { StoredProcedureResultWithTotal } from "../interfaces/repository.interface";
-import { secureLogger } from "../config/logger";
 import { batchInsert } from "../utils/database.utils";
+import { secureLogger } from "../config/logger";
 
 export class OrderRepository implements IOrderRepository {
   async getConnection(): Promise<PoolConnection> {
@@ -86,13 +86,13 @@ export class OrderRepository implements IOrderRepository {
       if (!orderId) {
         throw ErrorFactory.badRequest("Error al crear el pedido");
       }
-
-      // Insertar información de pago
-      await conn.query("CALL insertar_pago_pedido(?, ?, ?)", [
-        orderId,
-        payMethod,
-        amount,
-      ]);
+      const payExists = await this.payExistsInOrder(orderId, conn);
+      if (payExists === 0) {
+        await conn.query(
+          "INSERT INTO pagocliente(pedido_id, metodoPago, monto) VALUES (?, ?, ?);",
+          [orderId, payMethod, amount]
+        );
+      }
 
       // Insertar productos en batch
       const productValues = products.map((p) => [
@@ -137,11 +137,17 @@ export class OrderRepository implements IOrderRepository {
     try {
       await conn.beginTransaction();
 
-      await conn.query("CALL insertar_producto_pedido(?, ?, ?)", [
+      const productInOrder = await this.productExistsInOrder(
         orderId,
-        productId,
-        quantity,
-      ]);
+        productId
+      );
+
+      if (!productInOrder) {
+        await conn.query(
+          "INSERT INTO pedidodetalle (pedido_id, producto_id, cantidad) VALUES (?, ?, ?);",
+          [orderId, productId, quantity]
+        );
+      }
 
       await conn.commit();
 
@@ -165,7 +171,7 @@ export class OrderRepository implements IOrderRepository {
       await conn.beginTransaction();
 
       const [res] = await conn.query<ResultSetHeader>(
-        "CALL insertar_fecha_pago(?)",
+        " UPDATE pagocliente SET fechaPago = DATE_SUB(NOW(), INTERVAL 3 HOUR) WHERE pedido_id = ? AND fechaPago IS NULL",
         [orderId]
       );
 
@@ -193,7 +199,7 @@ export class OrderRepository implements IOrderRepository {
       await conn.beginTransaction();
 
       const [result] = await conn.query<ResultSetHeader>(
-        `CALL eliminar_producto_pedido (?, ?)`,
+        `DELETE FROM pedidodetalle AS pd WHERE pd.pedido_id = ? AND pd.producto_id = ?; `,
         [orderId, productId]
       );
 
@@ -224,7 +230,7 @@ export class OrderRepository implements IOrderRepository {
       await conn.beginTransaction();
 
       const [result] = await conn.query<ResultSetHeader>(
-        "CALL eliminar_pedido(?)",
+        "DELETE FROM pedido AS p WHERE p.id = ?;",
         [orderId]
       );
 
@@ -260,21 +266,16 @@ export class OrderRepository implements IOrderRepository {
       await conn.beginTransaction();
 
       // Actualizar pedido
-      await conn.query("CALL actualizar_pedido(?, ?, ?, ?, ?, ?)", [
-        orderId,
-        address,
-        deliveryTime,
-        observation,
-        state,
-        clientSurame,
-      ]);
+      await conn.query(
+        " UPDATE pedido AS p SET p.domicilio = ?, p.horaEntrega = ?, p.observacion = ?, p.estado = ?, p.apellido_cliente = ? WHERE p.id = ?",
+        [address, deliveryTime, observation, state, clientSurame, orderId]
+      );
 
       // Actualizar pago
-      await conn.query("CALL actualizar_pago_pedido(?, ?, ?)", [
-        orderId,
-        payMethod,
-        amount,
-      ]);
+      await conn.query(
+        "UPDATE pagocliente SET metodoPago = ?, monto = ? WHERE pedido_id = ?",
+        [payMethod, amount, orderId]
+      );
 
       // Actualizar productos
       for (const product of products) {
@@ -379,6 +380,27 @@ export class OrderRepository implements IOrderRepository {
       );
 
       return rows.length > 0;
+    } finally {
+      if (!conn) connection.release();
+    }
+  }
+
+  async payExistsInOrder(
+    orderId: number,
+    conn?: PoolConnection
+  ): Promise<number> {
+    const connection = conn || (await this.getConnection());
+
+    try {
+      const [rows] = await connection.query<RowDataPacket[]>(
+        `  SELECT COUNT(*) AS pago_existente
+  FROM pagocliente
+  WHERE pedido_id = ?`,
+        [orderId]
+      );
+
+      const count = rows[0]?.pago_existente ?? 0;
+      return count;
     } finally {
       if (!conn) connection.release();
     }

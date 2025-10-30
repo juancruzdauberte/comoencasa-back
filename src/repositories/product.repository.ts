@@ -120,7 +120,10 @@ export class ProductRepository implements IProductRepository {
         );
       }
 
-      await conn.query("CALL crear_producto(?, ?)", [name, categoryId]);
+      await conn.query(
+        "INSERT INTO producto(nombre, categoria_id) VALUES (?, ?);",
+        [name, categoryId]
+      );
 
       await conn.commit();
 
@@ -410,7 +413,7 @@ export class CategoryRepository implements ICategoryRepository {
         );
       }
 
-      await conn.query("CALL crear_categoria(?)", [name]);
+      await conn.query("INSERT INTO categoria(nombre) VALUES (?)", [name]);
 
       await conn.commit();
 
