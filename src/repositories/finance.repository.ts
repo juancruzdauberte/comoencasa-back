@@ -2,7 +2,6 @@ import { PoolConnection, ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import { db } from "../db/db";
 import {
   AmountResponseDTO,
-  DeliveryAmountResponseDTO,
   FinanceParamResponseDTO,
 } from "../dtos/finance.dto";
 import { ErrorFactory } from "../errors/errorFactory";
@@ -171,10 +170,10 @@ export class FinanceRepository implements IFinanceRepository {
     }
   }
 
-  async getDeliveryAmountToPay(): Promise<DeliveryAmountResponseDTO> {
+  async getDeliveryAmountToPay(): Promise<AmountResponseDTO> {
     try {
       // Los stored procedures retornan el resultado en rows[0]
-      const [rows] = await db.query<RowDataPacket[][]>(
+      const [rows] = await db.query<RowDataPacket[]>(
         "CALL calcular_total_motoquero()"
       );
 
@@ -185,7 +184,7 @@ export class FinanceRepository implements IFinanceRepository {
         );
       }
 
-      return rows[0][0] as DeliveryAmountResponseDTO;
+      return rows[0] as AmountResponseDTO;
     } catch (error) {
       if (error instanceof AppError) {
         throw error;

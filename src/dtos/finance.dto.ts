@@ -4,10 +4,6 @@ export interface AmountResponseDTO {
   total: number;
 }
 
-export interface DeliveryAmountResponseDTO {
-  total_a_pagar: number;
-}
-
 export interface FinanceParamResponseDTO {
   valor: number;
 }
