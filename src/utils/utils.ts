@@ -1,8 +1,8 @@
 import jwt from "jsonwebtoken";
 import config from "../config/config";
-import { Payload } from "../types/types";
+import { TokenPayloadDTO } from "../dtos/auth.dto";
 
-export function generateAccessToken(payload: Payload) {
+export function generateAccessToken(payload: TokenPayloadDTO) {
   return jwt.sign(payload, config.JWT_SECRET_ACCESS_TOKEN!, {
     expiresIn: "5m",
   });
@@ -12,7 +12,7 @@ export function verifyAccessToken(token: string) {
   return jwt.verify(token, config.JWT_SECRET_ACCESS_TOKEN!);
 }
 
-export function generateRefreshToken(payload: Payload) {
+export function generateRefreshToken(payload: TokenPayloadDTO) {
   return jwt.sign(payload, config.JWT_SECRET_REFRESH_TOKEN!, {
     expiresIn: "3d",
   });

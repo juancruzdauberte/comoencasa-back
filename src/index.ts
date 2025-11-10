@@ -1,5 +1,6 @@
 import config from "./config/config";
 import { secureLogger } from "./config/logger";
+import { startRedisServer } from "./config/redis.config";
 import app from "./config/server";
 import cluster from "cluster";
 import os from "os";
@@ -58,8 +59,9 @@ if (cluster.isPrimary) {
   }, 30000);
 } else {
   // Worker process
-  app.listen(config.PORT, () => {
+  app.listen(config.PORT, async () => {
     secureLogger.info(`Worker ${process.pid} started on port ${config.PORT}`);
+    await startRedisServer();
   });
 
   // ✅ SOLUCIÓN 5: Reportar memoria del worker

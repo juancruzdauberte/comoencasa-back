@@ -1,4 +1,3 @@
-import { PoolConnection } from "mysql2/typings/mysql/lib/PoolConnection";
 import { ErrorFactory } from "../errors/errorFactory";
 import { IFinanceRepository } from "../interfaces/finance.interface";
 import { withTransaction } from "../utils/database.utils";
