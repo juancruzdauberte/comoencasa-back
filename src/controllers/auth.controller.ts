@@ -76,7 +76,6 @@ export async function refreshToken(
     const accessToken = generateAccessToken({
       rol: user.rol,
       email: user.email,
-      avatar: user.avatar,
     });
 
     secureLogger.info("Access token refreshed successfully", {
@@ -142,7 +141,6 @@ export async function getCurrentUser(
     res.json({
       email: user.email,
       rol: user.rol,
-      avatar: user.avatar,
     });
   } catch (error) {
     secureLogger.error("Error getting current user", error);

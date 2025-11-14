@@ -4,7 +4,8 @@ import { TokenPayloadDTO } from "../dtos/auth.dto";
 
 export function generateAccessToken(payload: TokenPayloadDTO) {
   return jwt.sign(payload, config.JWT_SECRET_ACCESS_TOKEN!, {
-    expiresIn: "5m",
+    expiresIn: "15m",
+    audience: "access",
   });
 }
 
@@ -15,6 +16,7 @@ export function verifyAccessToken(token: string) {
 export function generateRefreshToken(payload: TokenPayloadDTO) {
   return jwt.sign(payload, config.JWT_SECRET_REFRESH_TOKEN!, {
     expiresIn: "3d",
+    audience: "refresh",
   });
 }
 

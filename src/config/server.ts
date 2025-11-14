@@ -14,19 +14,8 @@ import { setupSwagger } from "../config/swagger";
 import helmet from "helmet";
 import { limiter } from "./limiter";
 import responseTime from "response-time";
-import {
-  CategoryRepository,
-  ProductRepository,
-} from "../repositories/product.repository";
-import { ProductController } from "../controllers/products.controller";
-import { ProductService } from "../services/products.service";
 import { productRouter } from "../routes/products.routes";
-import { FinanceRepository } from "../repositories/finance.repository";
-import { FinanceService } from "../services/finances.service";
-import { FinanceController } from "../controllers/finances.controller";
-import { OrderRepository } from "../repositories/order.repository";
-import { OrderService } from "../services/orders.service";
-import { OrderController } from "../controllers/orders.controller";
+import { DIContainer } from "../core/DIContainer";
 
 const app = express();
 app.set("trust proxy", 1);
@@ -47,25 +36,24 @@ app.use(compression());
 
 setupSwagger(app);
 
-const productRepository = new ProductRepository();
-const categoryRepository = new CategoryRepository();
-const productService = new ProductService(
-  productRepository,
-  categoryRepository
-);
-const productController = new ProductController(productService);
-const financeRepository = new FinanceRepository();
-const financeService = new FinanceService(financeRepository);
-const financeController = new FinanceController(financeService);
-const orderRepository = new OrderRepository();
-const orderService = new OrderService(orderRepository);
-const orderController = new OrderController(orderService);
-
 app.use(limiter);
 app.use("/api/auth", authRoutes);
-app.use("/api/products", authenticateRequest, productRouter(productController));
-app.use("/api/orders", authenticateRequest, orderRouter(orderController));
-app.use("/api/finances", authenticateRequest, financeRouter(financeController));
+
+app.use(
+  "/api/products",
+  authenticateRequest,
+  productRouter(DIContainer.getProductController())
+);
+app.use(
+  "/api/orders",
+  authenticateRequest,
+  orderRouter(DIContainer.getOrderController())
+);
+app.use(
+  "/api/finances",
+  authenticateRequest,
+  financeRouter(DIContainer.getFinanceController())
+);
 
 app.use(errorHandler);
 

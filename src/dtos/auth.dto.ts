@@ -25,5 +25,4 @@ export interface UserDTO {
 export interface TokenPayloadDTO {
   email: string;
   rol: string;
-  avatar: string;
 }

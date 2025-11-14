@@ -18,7 +18,6 @@ export function configurePassport() {
       async (_accesToken, _refreshToken, profile, done) => {
         try {
           const authenticateEmail = profile.emails?.[0].value;
-          const avatar = profile.photos?.[0]?.value ?? "";
 
           if (!authenticateEmail) return done(null, false);
           const user = await userService.getUserByEmail(authenticateEmail);
@@ -28,8 +27,8 @@ export function configurePassport() {
 
           const { rol, email } = user;
 
-          const accessToken = generateAccessToken({ rol, email, avatar });
-          const refreshToken = generateRefreshToken({ rol, email, avatar });
+          const accessToken = generateAccessToken({ rol, email });
+          const refreshToken = generateRefreshToken({ rol, email });
 
           return done(null, { user, accessToken, refreshToken });
         } catch (error) {

@@ -37,6 +37,9 @@ interface Config {
   JWT_SECRET_ACCESS_TOKEN: string;
   JWT_SECRET_REFRESH_TOKEN: string;
   NODE_ENV: string;
+  REDIS_PORT: string;
+  REDIS_HOST: string;
+  REDIS_URL: string;
 }
 
 function validateConfig(): Config {
@@ -54,6 +57,9 @@ function validateConfig(): Config {
     "JWT_SECRET_ACCESS_TOKEN",
     "JWT_SECRET_REFRESH_TOKEN",
     "NODE_ENV",
+    "REDIS_PORT",
+    "REDIS_HOST",
+    "REDIS_URL",
   ];
 
   const missing: string[] = [];
@@ -121,6 +127,9 @@ function validateConfig(): Config {
     JWT_SECRET_ACCESS_TOKEN: process.env.JWT_SECRET_ACCESS_TOKEN!,
     JWT_SECRET_REFRESH_TOKEN: process.env.JWT_SECRET_REFRESH_TOKEN!,
     NODE_ENV: process.env.NODE_ENV!,
+    REDIS_PORT: process.env.REDIS_PORT!,
+    REDIS_HOST: process.env.REDIS_HOST!,
+    REDIS_URL: process.env.REDIS_URL!,
   };
 }
 
