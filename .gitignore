@@ -4,4 +4,4 @@ node_modules
 package-lock.json
 .dockerignore
 logs/*.log
-*.md
+AGENTS.md
