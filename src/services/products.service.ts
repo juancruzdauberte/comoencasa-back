@@ -6,15 +6,22 @@ import {
   IProductRepository,
 } from "../interfaces/product.interface";
 import { withTransaction } from "../utils/database.utils";
+import { redisClient } from "../config/redis.config";
 
 export class ProductService {
   constructor(
     private productRepository: IProductRepository,
-    private categoryRepository: ICategoryRepository
+    private categoryRepository: ICategoryRepository,
   ) {}
 
   async getAllProducts() {
-    return await this.productRepository.findAll();
+    const cacheKey = "products:all";
+    const cached = await redisClient.get(cacheKey);
+    if (cached) return JSON.parse(cached);
+
+    const products = await this.productRepository.findAll();
+    await redisClient.set(cacheKey, JSON.stringify(products), { EX: 3600 });
+    return products;
   }
 
   async getProductById(id: number) {
@@ -29,16 +36,22 @@ export class ProductService {
 
   async getProductsByCategory(categoryId: string) {
     const categoryExists = await this.categoryRepository.exists(
-      Number(categoryId)
+      Number(categoryId),
     );
 
     if (!categoryExists) {
       throw ErrorFactory.notFound(
-        `Categoría con ID ${categoryId} no encontrada`
+        `Categoría con ID ${categoryId} no encontrada`,
       );
     }
 
-    return await this.productRepository.findByCategory(categoryId);
+    const cacheKey = `products:category:${categoryId}`;
+    const cached = await redisClient.get(cacheKey);
+    if (cached) return JSON.parse(cached);
+
+    const products = await this.productRepository.findByCategory(categoryId);
+    await redisClient.set(cacheKey, JSON.stringify(products), { EX: 3600 });
+    return products;
   }
 
   async createProduct(productName: string, categoryId: number) {
@@ -57,7 +70,7 @@ export class ProductService {
         return await this.productRepository.create(
           trimmedName,
           categoryId,
-          conn
+          conn,
         );
       });
 
@@ -65,6 +78,8 @@ export class ProductService {
         name: trimmedName,
         categoryId,
       });
+
+      await this.invalidateProductCache(categoryId);
     } catch (error) {
       secureLogger.error("Error creating product", error, {
         name: trimmedName,
@@ -88,6 +103,7 @@ export class ProductService {
         await this.productRepository.delete(id, conn);
         secureLogger.info("Product deleted successfully", { id });
       });
+      await this.invalidateProductCache();
     } catch (error) {
       secureLogger.error("Error deleting product", error, {
         id,
@@ -101,7 +117,13 @@ export class ProductService {
   }
 
   async getProductsCategory() {
-    return await this.categoryRepository.findAll();
+    const cacheKey = "categories:all";
+    const cached = await redisClient.get(cacheKey);
+    if (cached) return JSON.parse(cached);
+
+    const categories = await this.categoryRepository.findAll();
+    await redisClient.set(cacheKey, JSON.stringify(categories), { EX: 86400 });
+    return categories;
   }
 
   async getCategoryById(id: number) {
@@ -119,7 +141,7 @@ export class ProductService {
 
     if (!category) {
       throw ErrorFactory.notFound(
-        `Categoría con nombre "${name}" no encontrada`
+        `Categoría con nombre "${name}" no encontrada`,
       );
     }
 
@@ -135,6 +157,7 @@ export class ProductService {
       await withTransaction(async (conn) => {
         await this.categoryRepository.create(categoryNameTrimmed, conn);
       });
+      await redisClient.del("categories:all");
     } catch (error) {
       secureLogger.error("Error creating category", error, {
         categoryName,
@@ -156,6 +179,9 @@ export class ProductService {
       await withTransaction(async (conn) => {
         await this.categoryRepository.delete(id, conn);
       });
+      await redisClient.del("categories:all");
+      // Si borramos categoría, también invalidar productos por si acaso
+      await this.invalidateProductCache(id);
     } catch (error) {
       secureLogger.error("Error deleting category", error, {
         id,
@@ -166,5 +192,18 @@ export class ProductService {
 
       throw ErrorFactory.internal("Error al eliminar la categoria");
     }
+  }
+
+  private async invalidateProductCache(categoryId?: number) {
+    const keys = ["products:all"];
+    if (categoryId) {
+      keys.push(`products:category:${categoryId}`);
+    } else {
+      // Si no tenemos ID, invalidamos todas las categorías (más costoso pero seguro)
+      // Ojo: SCAN es mejor para producción masiva, pero keys aquí es aceptable para escalas pequeñas
+      const categoryKeys = await redisClient.keys("products:category:*");
+      keys.push(...categoryKeys);
+    }
+    await redisClient.del(keys);
   }
 }

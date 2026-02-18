@@ -20,7 +20,7 @@ export class ProductRepository implements IProductRepository {
         `SELECT p.id, p.nombre, cat.id AS categoriaId, cat.nombre AS categoria 
          FROM producto AS p 
          INNER JOIN categoria AS cat ON cat.id = p.categoria_id
-         ORDER BY cat.nombre, p.nombre`
+         ORDER BY cat.nombre, p.nombre`,
       );
 
       return rows as ProductResponseDTO[];
@@ -41,7 +41,7 @@ export class ProductRepository implements IProductRepository {
          INNER JOIN categoria AS cat ON cat.id = p.categoria_id 
          WHERE p.id = ?
          LIMIT 1`,
-        [id]
+        [id],
       );
 
       if (rows.length === 0) {
@@ -66,7 +66,7 @@ export class ProductRepository implements IProductRepository {
          INNER JOIN categoria AS cat ON cat.id = p.categoria_id 
          WHERE cat.id = ?
          ORDER BY p.nombre`,
-        [categoryId]
+        [categoryId],
       );
 
       return rows as ProductResponseDTO[];
@@ -89,7 +89,7 @@ export class ProductRepository implements IProductRepository {
          INNER JOIN categoria AS cat ON cat.id = p.categoria_id 
          WHERE p.nombre LIKE ?
          ORDER BY p.nombre`,
-        [`%${name}%`]
+        [`%${name}%`],
       );
 
       return rows as ProductResponseDTO[];
@@ -105,11 +105,11 @@ export class ProductRepository implements IProductRepository {
   async create(
     name: string,
     categoryId: number,
-    conn: PoolConnection
+    conn: PoolConnection,
   ): Promise<void> {
     await conn.query(
       "INSERT INTO producto(nombre, categoria_id) VALUES (?, ?)",
-      [name, categoryId]
+      [name, categoryId],
     );
   }
 
@@ -123,7 +123,7 @@ export class ProductRepository implements IProductRepository {
     try {
       const [rows] = await db.query<RowDataPacket[]>(
         "SELECT id FROM producto WHERE id = ? LIMIT 1",
-        [id]
+        [id],
       );
 
       return rows.length > 0;
@@ -136,8 +136,8 @@ export class ProductRepository implements IProductRepository {
   async existsInCategory(name: string, categoryId: number): Promise<boolean> {
     try {
       const [rows] = await db.query<RowDataPacket[]>(
-        "SELECT id FROM producto WHERE nombre = ? AND categoria_id = ? LIMIT ",
-        [name, categoryId]
+        "SELECT id FROM producto WHERE nombre = ? AND categoria_id = ? LIMIT 1",
+        [name, categoryId],
       );
 
       return rows.length > 0;
@@ -147,10 +147,10 @@ export class ProductRepository implements IProductRepository {
         error,
         {
           name,
-        }
+        },
       );
       throw ErrorFactory.internal(
-        "Error al verificar existencia del producto en la categoria"
+        "Error al verificar existencia del producto en la categoria",
       );
     }
   }
@@ -164,7 +164,7 @@ export class CategoryRepository implements ICategoryRepository {
   async findAll(): Promise<CategoryResponseDTO[]> {
     try {
       const [rows] = await db.query<RowDataPacket[]>(
-        "SELECT * FROM categoria ORDER BY nombre"
+        "SELECT * FROM categoria ORDER BY nombre",
       );
 
       return rows as CategoryResponseDTO[];
@@ -181,7 +181,7 @@ export class CategoryRepository implements ICategoryRepository {
     try {
       const [rows] = await db.query<RowDataPacket[]>(
         "SELECT * FROM categoria WHERE id = ? LIMIT 1",
-        [id]
+        [id],
       );
 
       if (rows.length === 0) {
@@ -202,7 +202,7 @@ export class CategoryRepository implements ICategoryRepository {
     try {
       const [rows] = await db.query<RowDataPacket[]>(
         "SELECT * FROM categoria WHERE nombre = ? LIMIT 1",
-        [name]
+        [name],
       );
 
       if (rows.length === 0) {
@@ -233,14 +233,14 @@ export class CategoryRepository implements ICategoryRepository {
     try {
       const [rows] = await db.query<RowDataPacket[]>(
         "SELECT id FROM categoria WHERE id = ? LIMIT 1",
-        [id]
+        [id],
       );
 
       return rows.length > 0;
     } catch (error) {
       secureLogger.error("Error checking category existence", error, { id });
       throw ErrorFactory.internal(
-        "Error al verificar existencia de la categoría"
+        "Error al verificar existencia de la categoría",
       );
     }
   }
@@ -249,7 +249,7 @@ export class CategoryRepository implements ICategoryRepository {
     try {
       const [rows] = await db.query<RowDataPacket[]>(
         "SELECT id FROM categoria WHERE nombre = ? LIMIT 1",
-        [name]
+        [name],
       );
 
       return rows.length > 0;
@@ -258,7 +258,7 @@ export class CategoryRepository implements ICategoryRepository {
         name,
       });
       throw ErrorFactory.internal(
-        "Error al verificar existencia de la categoría"
+        "Error al verificar existencia de la categoría",
       );
     }
   }

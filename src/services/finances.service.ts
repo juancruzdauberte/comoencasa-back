@@ -3,40 +3,95 @@ import { IFinanceRepository } from "../interfaces/finance.interface";
 import { withTransaction } from "../utils/database.utils";
 import { secureLogger } from "../config/logger";
 import { AppError } from "../errors/errors";
+import { redisClient } from "../config/redis.config";
 
 export class FinanceService {
   constructor(private financeRepository: IFinanceRepository) {}
 
   async getAmountToday() {
-    return await this.financeRepository.getAmountToday();
+    const cacheKey = "finance:amount:today";
+    const cached = await redisClient.get(cacheKey);
+    if (cached) return JSON.parse(cached);
+
+    const amount = await this.financeRepository.getAmountToday();
+    await redisClient.set(cacheKey, JSON.stringify(amount), { EX: 600 });
+    return amount;
   }
 
   async getTransferAmountToday() {
-    return await this.financeRepository.getTransferAmountToday();
+    const cacheKey = "finance:transfer:today";
+    const cached = await redisClient.get(cacheKey);
+    if (cached) return JSON.parse(cached);
+
+    const amount = await this.financeRepository.getTransferAmountToday();
+    await redisClient.set(cacheKey, JSON.stringify(amount), { EX: 600 });
+    return amount;
   }
 
   async getCashAmountToday() {
-    return await this.financeRepository.getCashAmountToday();
+    const cacheKey = "finance:cash:today";
+    const cached = await redisClient.get(cacheKey);
+    if (cached) return JSON.parse(cached);
+
+    const amount = await this.financeRepository.getCashAmountToday();
+    await redisClient.set(cacheKey, JSON.stringify(amount), { EX: 600 });
+    return amount;
   }
 
   async getAmountMonthly(month: number, year: number) {
-    return await this.financeRepository.getAmountMonthly(month, year);
+    const cacheKey = `finance:amount:monthly:${year}:${month}`;
+    const cached = await redisClient.get(cacheKey);
+    if (cached) return JSON.parse(cached);
+
+    const amount = await this.financeRepository.getAmountMonthly(month, year);
+    await redisClient.set(cacheKey, JSON.stringify(amount), { EX: 600 });
+    return amount;
   }
 
   async getTransferAmountMonthly(month: number, year: number) {
-    return await this.financeRepository.getTransferAmountMonthly(month, year);
+    const cacheKey = `finance:transfer:monthly:${year}:${month}`;
+    const cached = await redisClient.get(cacheKey);
+    if (cached) return JSON.parse(cached);
+
+    const amount = await this.financeRepository.getTransferAmountMonthly(
+      month,
+      year,
+    );
+    await redisClient.set(cacheKey, JSON.stringify(amount), { EX: 600 });
+    return amount;
   }
 
   async getCashAmountMonthly(month: number, year: number) {
-    return await this.financeRepository.getCashAmountMonthly(month, year);
+    const cacheKey = `finance:cash:monthly:${year}:${month}`;
+    const cached = await redisClient.get(cacheKey);
+    if (cached) return JSON.parse(cached);
+
+    const amount = await this.financeRepository.getCashAmountMonthly(
+      month,
+      year,
+    );
+    await redisClient.set(cacheKey, JSON.stringify(amount), { EX: 600 });
+    return amount;
   }
 
   async getDeliveryAmountToPay() {
-    return await this.financeRepository.getDeliveryAmountToPay();
+    const cacheKey = "finance:delivery:pay";
+    const cached = await redisClient.get(cacheKey);
+    if (cached) return JSON.parse(cached);
+
+    const amount = await this.financeRepository.getDeliveryAmountToPay();
+    await redisClient.set(cacheKey, JSON.stringify(amount), { EX: 600 });
+    return amount;
   }
 
   async getDeliveryCashAmount() {
-    return await this.financeRepository.getDeliveryCashAmount();
+    const cacheKey = "finance:delivery:cash";
+    const cached = await redisClient.get(cacheKey);
+    if (cached) return JSON.parse(cached);
+
+    const amount = await this.financeRepository.getDeliveryCashAmount();
+    await redisClient.set(cacheKey, JSON.stringify(amount), { EX: 600 });
+    return amount;
   }
 
   async getValueFinanceParam(paramName: string) {
@@ -44,7 +99,7 @@ export class FinanceService {
 
     if (!param) {
       throw ErrorFactory.notFound(
-        `Parámetro financiero '${paramName}' no encontrado`
+        `Parámetro financiero '${paramName}' no encontrado`,
       );
     }
 
@@ -57,11 +112,11 @@ export class FinanceService {
         const result = await this.financeRepository.updateFinanceParamValue(
           value,
           paramName,
-          conn
+          conn,
         );
         if (result.affectedRows === 0) {
           throw ErrorFactory.notFound(
-            `Parámetro financiero '${paramName}' no encontrado para actualizar`
+            `Parámetro financiero '${paramName}' no encontrado para actualizar`,
           );
         }
 
@@ -77,7 +132,7 @@ export class FinanceService {
         value,
       });
       throw ErrorFactory.internal(
-        "Error al actualizar el parámetro financiero"
+        "Error al actualizar el parámetro financiero",
       );
     }
   }
