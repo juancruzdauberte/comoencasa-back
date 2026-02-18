@@ -28,13 +28,14 @@ export function configurePassport() {
           const { rol, email } = user;
 
           const accessToken = generateAccessToken({ rol, email });
-          const refreshToken = generateRefreshToken({ rol, email });
+          const refreshToken =
+            rol === "user" ? undefined : generateRefreshToken({ rol, email });
 
           return done(null, { user, accessToken, refreshToken });
         } catch (error) {
           return done(null, false);
         }
-      }
-    )
+      },
+    ),
   );
 }

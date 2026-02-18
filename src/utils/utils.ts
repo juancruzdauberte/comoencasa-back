@@ -3,8 +3,9 @@ import config from "../config/config";
 import { TokenPayloadDTO } from "../dtos/auth.dto";
 
 export function generateAccessToken(payload: TokenPayloadDTO) {
+  const expiresIn = payload.rol === "user" ? "30d" : "15m";
   return jwt.sign(payload, config.JWT_SECRET_ACCESS_TOKEN!, {
-    expiresIn: "15m",
+    expiresIn,
     audience: "access",
   });
 }

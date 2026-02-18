@@ -8,16 +8,16 @@ import { secureLogger } from "../config/logger";
 export function googleCallback(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
   try {
     const { user, accessToken, refreshToken } = req.user as {
       user: UserDTO;
       accessToken: string;
-      refreshToken: string;
+      refreshToken?: string;
     };
 
-    if (!user || !accessToken || !refreshToken) {
+    if (!user || !accessToken || (user.rol !== "user" && !refreshToken)) {
       secureLogger.error(
         "Incomplete authentication data from Google OAuth",
         undefined,
@@ -25,17 +25,20 @@ export function googleCallback(
           hasUser: !!user,
           hasAccessToken: !!accessToken,
           hasRefreshToken: !!refreshToken,
-        }
+          rol: user?.rol,
+        },
       );
       throw ErrorFactory.internal("Error en la autenticación de Google");
     }
 
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: config.NODE_ENV === "production" ? true : false,
-      sameSite: config.NODE_ENV === "production" ? "none" : "lax",
-      maxAge: 3 * 24 * 60 * 60 * 1000,
-    });
+    if (refreshToken) {
+      res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: config.NODE_ENV === "production" ? true : false,
+        sameSite: config.NODE_ENV === "production" ? "none" : "lax",
+        maxAge: 3 * 24 * 60 * 60 * 1000,
+      });
+    }
 
     secureLogger.info("User authenticated successfully via Google OAuth", {
       email: user.email,
@@ -52,7 +55,7 @@ export function googleCallback(
 export async function refreshToken(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
   const { refreshToken } = req.cookies;
 
@@ -129,7 +132,7 @@ export async function failure(req: Request, res: Response, next: NextFunction) {
 export async function getCurrentUser(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
   try {
     const user = req.user as TokenPayloadDTO;
