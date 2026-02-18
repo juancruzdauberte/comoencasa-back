@@ -10,14 +10,22 @@ export class EventService {
   private static clients: Response[] = [];
 
   static async init() {
-    await monitorClient.connect();
-    // Suscribirse al canal de notificaciones globales
-    await monitorClient.subscribe("NEW_ORDER_TOPIC", (message) => {
-      console.log("🔔 EventService: Received Redis message", message);
-      // Cuando Redis nos avisa (desde cualquier worker), notificamos a NUESTROS clientes
-      EventService.broadcastToLocalClients(JSON.parse(message));
-    });
-    console.log("✅ EventService: Subscribed to NEW_ORDER_TOPIC");
+    try {
+      await monitorClient.connect();
+      // Suscribirse al canal de notificaciones globales
+      await monitorClient.subscribe("NEW_ORDER_TOPIC", (message) => {
+        console.log("🔔 EventService: Received Redis message", message);
+        // Cuando Redis nos avisa (desde cualquier worker), notificamos a NUESTROS clientes
+        EventService.broadcastToLocalClients(JSON.parse(message));
+      });
+      console.log("✅ EventService: Subscribed to NEW_ORDER_TOPIC");
+    } catch (error) {
+      console.error(
+        "❌ EventService Error: Could not subscribe to Redis",
+        error,
+      );
+      // No lanzamos error para no tumbar el servidor si Redis falla aquí
+    }
   }
 
   // Añadir un cliente (pantalla de cocina)
