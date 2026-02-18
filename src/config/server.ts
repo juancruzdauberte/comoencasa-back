@@ -16,6 +16,7 @@ import { limiter } from "./limiter";
 import responseTime from "response-time";
 import { productRouter } from "../routes/products.routes";
 import { DIContainer } from "../core/DIContainer";
+import { eventsHandler } from "../controllers/events.controller";
 
 const app = express();
 app.set("trust proxy", 1);
@@ -26,13 +27,20 @@ app.use(
   cors({
     origin: config.CLIENT_URL,
     credentials: true,
-  })
+  }),
 );
 app.use(cookieParser());
 app.use(express.json());
 app.use(passport.initialize());
 configurePassport();
-app.use(compression());
+app.use(
+  compression({
+    filter: (req, res) => {
+      if (req.url.includes("/api/events")) return false;
+      return compression.filter(req, res);
+    },
+  }),
+);
 
 setupSwagger(app);
 
@@ -42,18 +50,19 @@ app.use("/api/auth", authRoutes);
 app.use(
   "/api/products",
   authenticateRequest,
-  productRouter(DIContainer.getProductController())
+  productRouter(DIContainer.getProductController()),
 );
 app.use(
   "/api/orders",
   authenticateRequest,
-  orderRouter(DIContainer.getOrderController())
+  orderRouter(DIContainer.getOrderController()),
 );
 app.use(
   "/api/finances",
   authenticateRequest,
-  financeRouter(DIContainer.getFinanceController())
+  financeRouter(DIContainer.getFinanceController()),
 );
+app.get("/api/events", eventsHandler);
 
 app.use(errorHandler);
 

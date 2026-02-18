@@ -4,6 +4,7 @@ import { startRedisServer } from "./config/redis.config";
 import app from "./config/server";
 import cluster from "cluster";
 import os from "os";
+import { EventService } from "./services/events.service";
 
 const numCPUs = os.cpus().length;
 
@@ -23,7 +24,7 @@ const WORKER_COUNT = getWorkerCount();
 if (cluster.isPrimary) {
   secureLogger.info(`Master process ${process.pid} is running`);
   secureLogger.info(
-    `Spawning ${WORKER_COUNT} workers (${numCPUs} CPUs available)`
+    `Spawning ${WORKER_COUNT} workers (${numCPUs} CPUs available)`,
   );
 
   // ✅ SOLUCIÓN 2: Crear workers con límites de memoria
@@ -62,6 +63,7 @@ if (cluster.isPrimary) {
   app.listen(config.PORT, async () => {
     secureLogger.info(`Worker ${process.pid} started on port ${config.PORT}`);
     await startRedisServer();
+    await EventService.init();
   });
 
   // ✅ SOLUCIÓN 5: Reportar memoria del worker

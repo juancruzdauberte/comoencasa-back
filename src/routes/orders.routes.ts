@@ -125,7 +125,7 @@ export const orderRouter = (controller: OrderController) => {
     "/product",
     addProductSchema,
     validateRequest,
-    controller.addProductToOrder
+    controller.addProductToOrder,
   );
 
   /**

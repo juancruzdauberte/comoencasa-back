@@ -5,6 +5,7 @@ import {
   CreateOrderRequestDTO,
   OrderQueryParamsDTO,
   UpdateOrderRequestDTO,
+  OrderResponseDTO,
 } from "../dtos/order.dto";
 import { redisClient } from "../config/redis.config";
 
@@ -26,7 +27,7 @@ export class OrderController {
       const { data, total } = await this.orderService.getOrders(
         filter || null,
         parsedLimit,
-        offset
+        offset,
       );
 
       const responseObject = {
@@ -84,7 +85,7 @@ export class OrderController {
         apellido_cliente = "",
       } = req.body as CreateOrderRequestDTO;
 
-      await this.orderService.createOrder({
+      const orderId = await this.orderService.createOrder({
         domicilio,
         hora_entrega,
         observacion,
@@ -94,7 +95,40 @@ export class OrderController {
         apellido_cliente,
       });
 
-      res.status(201).json({ message: "Pedido creado con éxito." });
+      // Obtener la orden completa para tener los nombres de productos (join)
+      // Esto es "rápido" porque es una búsqueda por ID indexado
+      const fullOrder = (await this.orderService.getOrderById(
+        orderId,
+      )) as unknown as OrderResponseDTO;
+
+      // Mapear SOLO los datos que la cocina necesita (Pattern: DTO de Evento)
+      const kitchenPayload = {
+        id: fullOrder.id,
+        cliente: fullOrder.apellido_cliente || "Cliente",
+        productos: (fullOrder.productos || []).map((p) => ({
+          nombre: p.nombre, // Aseguramos enviar nombre, no solo ID
+          cantidad: p.cantidad,
+        })),
+        observacion: fullOrder.observacion,
+        hora: new Date().toLocaleTimeString("es-AR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        estado: "PENDIENTE", // Estado inicial para visualización inmediata
+      };
+
+      // Publicar evento ligero
+      await redisClient.publish(
+        "NEW_ORDER_TOPIC",
+        JSON.stringify({
+          action: "NEW_ORDER",
+          order: kitchenPayload,
+        }),
+      );
+
+      res
+        .status(201)
+        .json({ message: "Pedido creado con éxito.", id: orderId });
     } catch (error) {
       next(error);
     }
@@ -103,7 +137,7 @@ export class OrderController {
   addProductToOrder = async (
     req: Request,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ) => {
     try {
       const { producto_id, pedido_id, cantidad } = req.body;
@@ -115,7 +149,7 @@ export class OrderController {
       await this.orderService.addProductToOrder(
         Number(pedido_id),
         Number(producto_id),
-        Number(cantidad)
+        Number(cantidad),
       );
 
       res
@@ -129,7 +163,7 @@ export class OrderController {
   insertOrderDatePay = async (
     req: Request,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ) => {
     try {
       const { oid } = req.params;
@@ -153,7 +187,7 @@ export class OrderController {
   deleteProductFromOrder = async (
     req: Request,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ) => {
     try {
       const { oid, pid } = req.params;
@@ -164,7 +198,7 @@ export class OrderController {
 
       await this.orderService.deleteProductFromOrder(
         parseInt(oid),
-        parseInt(pid)
+        parseInt(pid),
       );
 
       res.status(200).json({ message: "Producto eliminado del pedido" });
@@ -176,7 +210,7 @@ export class OrderController {
   updateProductQuantity = async (
     req: Request,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ) => {
     try {
       const { oid, pid } = req.params;
@@ -189,7 +223,7 @@ export class OrderController {
       await this.orderService.updateProductQuantity(
         parseInt(oid),
         parseInt(pid),
-        parseInt(cantidad)
+        parseInt(cantidad),
       );
 
       res.status(200).json({ message: "Cantidad actualizada correctamente" });
