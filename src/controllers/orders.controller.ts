@@ -264,6 +264,34 @@ export class OrderController {
       const defaultCacheKey = `orders:${oid}`;
       console.log(`✅ Invalidando caché: ${defaultCacheKey}`);
       redisClient.del(defaultCacheKey);
+
+      const fullOrder = (await this.orderService.getOrderById(
+        Number(oid),
+      )) as OrderResponseDTO;
+
+      const kitchenPayload = {
+        id: fullOrder.id,
+        cliente: fullOrder.apellido_cliente || "Cliente",
+        productos: (fullOrder.productos || []).map((p) => ({
+          nombre: p.nombre,
+          cantidad: p.cantidad,
+        })),
+        observacion: fullOrder.observacion,
+        hora: new Date().toLocaleTimeString("es-AR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        estado: fullOrder.estado,
+      };
+
+      await redisClient.publish(
+        "NEW_ORDER_TOPIC",
+        JSON.stringify({
+          action: "UPDATE_ORDER",
+          order: kitchenPayload,
+        }),
+      );
+
       res.status(200).json({ message: "Pedido actualizado correctamente" });
     } catch (error) {
       next(error);
