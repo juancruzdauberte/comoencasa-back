@@ -6,7 +6,7 @@ import {
   IProductRepository,
 } from "../interfaces/product.interface";
 import { withTransaction } from "../utils/database.utils";
-import { redisClient } from "../config/redis.config";
+import { redisClient, safeGet, safeSet, safeDel } from "../config/redis.config";
 
 export class ProductService {
   constructor(
@@ -16,11 +16,11 @@ export class ProductService {
 
   async getAllProducts() {
     const cacheKey = "products:all";
-    const cached = await redisClient.get(cacheKey);
+    const cached = await safeGet(cacheKey);
     if (cached) return JSON.parse(cached);
 
     const products = await this.productRepository.findAll();
-    await redisClient.set(cacheKey, JSON.stringify(products), { EX: 3600 });
+    await safeSet(cacheKey, JSON.stringify(products), { EX: 3600 });
     return products;
   }
 
@@ -46,11 +46,11 @@ export class ProductService {
     }
 
     const cacheKey = `products:category:${categoryId}`;
-    const cached = await redisClient.get(cacheKey);
+    const cached = await safeGet(cacheKey);
     if (cached) return JSON.parse(cached);
 
     const products = await this.productRepository.findByCategory(categoryId);
-    await redisClient.set(cacheKey, JSON.stringify(products), { EX: 3600 });
+    await safeSet(cacheKey, JSON.stringify(products), { EX: 3600 });
     return products;
   }
 
@@ -118,11 +118,11 @@ export class ProductService {
 
   async getProductsCategory() {
     const cacheKey = "categories:all";
-    const cached = await redisClient.get(cacheKey);
+    const cached = await safeGet(cacheKey);
     if (cached) return JSON.parse(cached);
 
     const categories = await this.categoryRepository.findAll();
-    await redisClient.set(cacheKey, JSON.stringify(categories), { EX: 86400 });
+    await safeSet(cacheKey, JSON.stringify(categories), { EX: 86400 });
     return categories;
   }
 
@@ -157,7 +157,7 @@ export class ProductService {
       await withTransaction(async (conn) => {
         await this.categoryRepository.create(categoryNameTrimmed, conn);
       });
-      await redisClient.del("categories:all");
+      await safeDel("categories:all");
     } catch (error) {
       secureLogger.error("Error creating category", error, {
         categoryName,
@@ -179,7 +179,7 @@ export class ProductService {
       await withTransaction(async (conn) => {
         await this.categoryRepository.delete(id, conn);
       });
-      await redisClient.del("categories:all");
+      await safeDel("categories:all");
       // Si borramos categoría, también invalidar productos por si acaso
       await this.invalidateProductCache(id);
     } catch (error) {
@@ -204,6 +204,6 @@ export class ProductService {
       const categoryKeys = await redisClient.keys("products:category:*");
       keys.push(...categoryKeys);
     }
-    await redisClient.del(keys);
+    await safeDel(keys);
   }
 }

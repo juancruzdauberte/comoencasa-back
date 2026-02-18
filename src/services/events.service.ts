@@ -5,6 +5,9 @@ import config from "../config/config";
 
 // Cliente Redis EXCLUSIVO para suscripción (Redis requiere cliente dedicado para esto)
 const monitorClient = createClient({ url: config.REDIS_URL });
+monitorClient.on("error", (err) =>
+  console.error("Redis Monitor Client Error", err),
+);
 
 export class EventService {
   private static clients: Response[] = [];

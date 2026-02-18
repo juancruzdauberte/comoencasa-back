@@ -95,18 +95,15 @@ export class OrderController {
         apellido_cliente,
       });
 
-      // Obtener la orden completa para tener los nombres de productos (join)
-      // Esto es "rápido" porque es una búsqueda por ID indexado
       const fullOrder = (await this.orderService.getOrderById(
         orderId,
       )) as unknown as OrderResponseDTO;
 
-      // Mapear SOLO los datos que la cocina necesita (Pattern: DTO de Evento)
       const kitchenPayload = {
         id: fullOrder.id,
         cliente: fullOrder.apellido_cliente || "Cliente",
         productos: (fullOrder.productos || []).map((p) => ({
-          nombre: p.nombre, // Aseguramos enviar nombre, no solo ID
+          nombre: p.nombre,
           cantidad: p.cantidad,
         })),
         observacion: fullOrder.observacion,
@@ -114,17 +111,20 @@ export class OrderController {
           hour: "2-digit",
           minute: "2-digit",
         }),
-        estado: "PENDIENTE", // Estado inicial para visualización inmediata
+        estado: "PENDIENTE",
       };
 
-      // Publicar evento ligero
-      await redisClient.publish(
-        "NEW_ORDER_TOPIC",
-        JSON.stringify({
-          action: "NEW_ORDER",
-          order: kitchenPayload,
-        }),
-      );
+      try {
+        await redisClient.publish(
+          "NEW_ORDER_TOPIC",
+          JSON.stringify({
+            action: "NEW_ORDER",
+            order: kitchenPayload,
+          }),
+        );
+      } catch (redisError) {
+        console.warn("Fallo al publicar evento NEW_ORDER en Redis", redisError);
+      }
 
       res
         .status(201)
@@ -177,7 +177,11 @@ export class OrderController {
 
       const defaultCacheKey = `orders:${oid}`;
       console.log(`✅ Invalidando caché: ${defaultCacheKey}`);
-      redisClient.del(defaultCacheKey);
+      try {
+        await redisClient.del(defaultCacheKey);
+      } catch (error) {
+        console.warn(`Error invalidating cache for ${defaultCacheKey}`, error);
+      }
       res.status(200).json({ message: "Pedido pagado con éxito" });
     } catch (error) {
       next(error);
@@ -263,7 +267,11 @@ export class OrderController {
       });
       const defaultCacheKey = `orders:${oid}`;
       console.log(`✅ Invalidando caché: ${defaultCacheKey}`);
-      redisClient.del(defaultCacheKey);
+      try {
+        await redisClient.del(defaultCacheKey);
+      } catch (error) {
+        console.warn(`Error invalidating cache for ${defaultCacheKey}`, error);
+      }
 
       const fullOrder = (await this.orderService.getOrderById(
         Number(oid),
@@ -284,13 +292,20 @@ export class OrderController {
         estado: fullOrder.estado,
       };
 
-      await redisClient.publish(
-        "NEW_ORDER_TOPIC",
-        JSON.stringify({
-          action: "UPDATE_ORDER",
-          order: kitchenPayload,
-        }),
-      );
+      try {
+        await redisClient.publish(
+          "NEW_ORDER_TOPIC",
+          JSON.stringify({
+            action: "UPDATE_ORDER",
+            order: kitchenPayload,
+          }),
+        );
+      } catch (redisError) {
+        console.warn(
+          "Fallo al publicar evento UPDATE_ORDER en Redis",
+          redisError,
+        );
+      }
 
       res.status(200).json({ message: "Pedido actualizado correctamente" });
     } catch (error) {

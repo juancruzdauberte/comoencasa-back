@@ -29,3 +29,28 @@ export const startRedisServer = async () => {
     // process.exit(1);
   }
 };
+
+export const safeGet = async (key: string) => {
+  try {
+    return await redisClient.get(key);
+  } catch (error) {
+    console.warn(`Redis safeGet error for key: ${key}`, error);
+    return null;
+  }
+};
+
+export const safeSet = async (key: string, value: string, options?: any) => {
+  try {
+    await redisClient.set(key, value, options);
+  } catch (error) {
+    console.warn(`Redis safeSet error for key: ${key}`, error);
+  }
+};
+
+export const safeDel = async (key: string | string[]) => {
+  try {
+    await redisClient.del(key);
+  } catch (error) {
+    console.warn(`Redis safeDel error`, error);
+  }
+};

@@ -3,94 +3,94 @@ import { IFinanceRepository } from "../interfaces/finance.interface";
 import { withTransaction } from "../utils/database.utils";
 import { secureLogger } from "../config/logger";
 import { AppError } from "../errors/errors";
-import { redisClient } from "../config/redis.config";
+import { redisClient, safeGet, safeSet } from "../config/redis.config";
 
 export class FinanceService {
   constructor(private financeRepository: IFinanceRepository) {}
 
   async getAmountToday() {
     const cacheKey = "finance:amount:today";
-    const cached = await redisClient.get(cacheKey);
+    const cached = await safeGet(cacheKey);
     if (cached) return JSON.parse(cached);
 
     const amount = await this.financeRepository.getAmountToday();
-    await redisClient.set(cacheKey, JSON.stringify(amount), { EX: 600 });
+    await safeSet(cacheKey, JSON.stringify(amount), { EX: 600 });
     return amount;
   }
 
   async getTransferAmountToday() {
     const cacheKey = "finance:transfer:today";
-    const cached = await redisClient.get(cacheKey);
+    const cached = await safeGet(cacheKey);
     if (cached) return JSON.parse(cached);
 
     const amount = await this.financeRepository.getTransferAmountToday();
-    await redisClient.set(cacheKey, JSON.stringify(amount), { EX: 600 });
+    await safeSet(cacheKey, JSON.stringify(amount), { EX: 600 });
     return amount;
   }
 
   async getCashAmountToday() {
     const cacheKey = "finance:cash:today";
-    const cached = await redisClient.get(cacheKey);
+    const cached = await safeGet(cacheKey);
     if (cached) return JSON.parse(cached);
 
     const amount = await this.financeRepository.getCashAmountToday();
-    await redisClient.set(cacheKey, JSON.stringify(amount), { EX: 600 });
+    await safeSet(cacheKey, JSON.stringify(amount), { EX: 600 });
     return amount;
   }
 
   async getAmountMonthly(month: number, year: number) {
     const cacheKey = `finance:amount:monthly:${year}:${month}`;
-    const cached = await redisClient.get(cacheKey);
+    const cached = await safeGet(cacheKey);
     if (cached) return JSON.parse(cached);
 
     const amount = await this.financeRepository.getAmountMonthly(month, year);
-    await redisClient.set(cacheKey, JSON.stringify(amount), { EX: 600 });
+    await safeSet(cacheKey, JSON.stringify(amount), { EX: 600 });
     return amount;
   }
 
   async getTransferAmountMonthly(month: number, year: number) {
     const cacheKey = `finance:transfer:monthly:${year}:${month}`;
-    const cached = await redisClient.get(cacheKey);
+    const cached = await safeGet(cacheKey);
     if (cached) return JSON.parse(cached);
 
     const amount = await this.financeRepository.getTransferAmountMonthly(
       month,
       year,
     );
-    await redisClient.set(cacheKey, JSON.stringify(amount), { EX: 600 });
+    await safeSet(cacheKey, JSON.stringify(amount), { EX: 600 });
     return amount;
   }
 
   async getCashAmountMonthly(month: number, year: number) {
     const cacheKey = `finance:cash:monthly:${year}:${month}`;
-    const cached = await redisClient.get(cacheKey);
+    const cached = await safeGet(cacheKey);
     if (cached) return JSON.parse(cached);
 
     const amount = await this.financeRepository.getCashAmountMonthly(
       month,
       year,
     );
-    await redisClient.set(cacheKey, JSON.stringify(amount), { EX: 600 });
+    await safeSet(cacheKey, JSON.stringify(amount), { EX: 600 });
     return amount;
   }
 
   async getDeliveryAmountToPay() {
     const cacheKey = "finance:delivery:pay";
-    const cached = await redisClient.get(cacheKey);
+    const cached = await safeGet(cacheKey);
     if (cached) return JSON.parse(cached);
 
     const amount = await this.financeRepository.getDeliveryAmountToPay();
-    await redisClient.set(cacheKey, JSON.stringify(amount), { EX: 600 });
+    await safeSet(cacheKey, JSON.stringify(amount), { EX: 600 });
     return amount;
   }
 
   async getDeliveryCashAmount() {
     const cacheKey = "finance:delivery:cash";
-    const cached = await redisClient.get(cacheKey);
+    const cached = await safeGet(cacheKey);
     if (cached) return JSON.parse(cached);
 
     const amount = await this.financeRepository.getDeliveryCashAmount();
-    await redisClient.set(cacheKey, JSON.stringify(amount), { EX: 600 });
+    await safeSet(cacheKey, JSON.stringify(amount), { EX: 600 });
     return amount;
   }
 
