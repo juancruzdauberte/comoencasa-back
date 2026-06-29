@@ -3,7 +3,7 @@ import { IFinanceRepository } from "../interfaces/finance.interface";
 import { withTransaction } from "../utils/database.utils";
 import { secureLogger } from "../config/logger";
 import { AppError } from "../errors/errors";
-import { redisClient, safeGet, safeSet } from "../config/redis.config";
+import { safeGet, safeSet } from "../config/redis.config";
 
 export class FinanceService {
   constructor(private financeRepository: IFinanceRepository) {}

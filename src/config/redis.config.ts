@@ -54,3 +54,20 @@ export const safeDel = async (key: string | string[]) => {
     console.warn(`Redis safeDel error`, error);
   }
 };
+
+export const safePublish = async (channel: string, message: string): Promise<void> => {
+  try {
+    await redisClient.publish(channel, message);
+  } catch (error) {
+    console.warn(`Redis safePublish error for channel: ${channel}`, error);
+  }
+};
+
+export const safeKeys = async (pattern: string): Promise<string[]> => {
+  try {
+    return await redisClient.keys(pattern);
+  } catch (error) {
+    console.warn(`Redis safeKeys error for pattern: ${pattern}`, error);
+    return [];
+  }
+};

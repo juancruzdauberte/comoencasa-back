@@ -6,7 +6,7 @@ import {
   CreateProductRequestDTO,
   ProductQueryParamsDTO,
 } from "../dtos/product.dto";
-import { redisClient } from "../config/redis.config";
+import { safeGet, safeSet, safeDel } from "../config/redis.config";
 
 const ALL_PRODUCTS_URL = "/api/products";
 
@@ -22,7 +22,7 @@ export class ProductController {
       // <-- CAMBIO: Usamos una clave estática y predecible.
       const cacheKey = "products:categories:list";
 
-      const reply = await redisClient.get(cacheKey);
+      const reply = await safeGet(cacheKey);
 
       if (reply) {
         console.log(`✅ HIT: Sirviendo ${cacheKey}`);
@@ -31,7 +31,7 @@ export class ProductController {
 
       console.log(`❌ MISS: Obteniendo ${cacheKey}`);
       const data = await this.productService.getProductsCategory();
-      await redisClient.set(cacheKey, JSON.stringify(data));
+      await safeSet(cacheKey, JSON.stringify(data));
       res.status(200).json(data);
     } catch (error) {
       next(error);
@@ -46,7 +46,7 @@ export class ProductController {
     try {
       // <-- BIEN: Esta clave es dinámica y funciona bien para listas filtradas.
       const cacheKey = `products:${req.originalUrl}`;
-      const reply = await redisClient.get(cacheKey);
+      const reply = await safeGet(cacheKey);
 
       if (reply) {
         console.log(`✅ HIT: Sirviendo ${cacheKey}`);
@@ -64,7 +64,7 @@ export class ProductController {
       } else {
         throw ErrorFactory.badRequest("Categoría inválida");
       }
-      await redisClient.set(cacheKey, JSON.stringify(data));
+      await safeSet(cacheKey, JSON.stringify(data));
       res.status(200).json(data);
     } catch (error) {
       next(error);
@@ -77,7 +77,7 @@ export class ProductController {
 
       // <-- BIEN: Clave estandarizada y predecible para un solo item.
       const cacheKey = `products:${pid}`;
-      const reply = await redisClient.get(cacheKey);
+      const reply = await safeGet(cacheKey);
 
       if (reply) {
         console.log(`✅ HIT: Sirviendo ${cacheKey}`);
@@ -90,7 +90,7 @@ export class ProductController {
       }
 
       const data = await this.productService.getProductById(parseInt(pid));
-      await redisClient.set(cacheKey, JSON.stringify(data));
+      await safeSet(cacheKey, JSON.stringify(data));
       res.status(200).json(data);
     } catch (error) {
       next(error);
@@ -115,12 +115,12 @@ export class ProductController {
       // 1. Invalida la lista de "todos los productos"
       const allProductsKey = `products:${ALL_PRODUCTS_URL}`;
       console.log(`Invalidando: ${allProductsKey}`);
-      redisClient.del(allProductsKey);
+      safeDel(allProductsKey);
 
       // 2. Invalida la lista de la categoría específica
       const categoryListKey = `products:${ALL_PRODUCTS_URL}?category=${categoria_id}`;
       console.log(`Invalidando: ${categoryListKey}`);
-      redisClient.del(categoryListKey);
+      safeDel(categoryListKey);
 
       // --- ------------------------------- ---
 
@@ -151,12 +151,12 @@ export class ProductController {
       // 1. Invalida el producto individual (de getProductById)
       const productKey = `products:${pid}`;
       console.log(`Invalidando: ${productKey}`);
-      redisClient.del(productKey);
+      safeDel(productKey);
 
       // 2. Invalida la lista de "todos los productos"
       const allProductsKey = `products:${ALL_PRODUCTS_URL}`;
       console.log(`Invalidando: ${allProductsKey}`);
-      redisClient.del(allProductsKey);
+      safeDel(allProductsKey);
 
       // (Aquí también deberías invalidar la lista de su categoría si la sabes)
 
@@ -182,7 +182,7 @@ export class ProductController {
       // Invalida la lista de categorías (de getProductsCategory)
       const categoriesKey = "products:categories:list";
       console.log(`Invalidando: ${categoriesKey}`);
-      redisClient.del(categoriesKey);
+      safeDel(categoriesKey);
       // --- ------------------------------- ---
 
       res.status(200).json({ message: "Categoría eliminada" });
@@ -205,7 +205,7 @@ export class ProductController {
       // Invalida la lista de categorías (de getProductsCategory)
       const categoriesKey = "products:categories:list";
       console.log(`Invalidando: ${categoriesKey}`);
-      redisClient.del(categoriesKey);
+      safeDel(categoriesKey);
       // --- ------------------------------- ---
 
       res.status(201).json({

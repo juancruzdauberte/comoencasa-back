@@ -7,7 +7,7 @@ import {
   UpdateOrderRequestDTO,
   OrderResponseDTO,
 } from "../dtos/order.dto";
-import { redisClient } from "../config/redis.config";
+import { safeGet, safeSet, safeDel, safePublish } from "../config/redis.config";
 
 export class OrderController {
   constructor(private orderService: OrderService) {}
@@ -51,7 +51,7 @@ export class OrderController {
 
       const cacheKey = `orders:${oid}`;
 
-      const reply = await redisClient.get(cacheKey);
+      const reply = await safeGet(cacheKey);
 
       if (reply) {
         return res.json(JSON.parse(reply));
@@ -63,7 +63,7 @@ export class OrderController {
 
       const data = await this.orderService.getOrderById(parseInt(oid));
 
-      await redisClient.set(cacheKey, JSON.stringify(data), {
+      await safeSet(cacheKey, JSON.stringify(data), {
         EX: 150,
       });
 
@@ -114,17 +114,13 @@ export class OrderController {
         estado: "PENDIENTE",
       };
 
-      try {
-        await redisClient.publish(
+      await safePublish(
           "NEW_ORDER_TOPIC",
           JSON.stringify({
             action: "NEW_ORDER",
             order: kitchenPayload,
           }),
         );
-      } catch (redisError) {
-        console.warn("Fallo al publicar evento NEW_ORDER en Redis", redisError);
-      }
 
       res
         .status(201)
@@ -177,11 +173,7 @@ export class OrderController {
 
       const defaultCacheKey = `orders:${oid}`;
       console.log(`✅ Invalidando caché: ${defaultCacheKey}`);
-      try {
-        await redisClient.del(defaultCacheKey);
-      } catch (error) {
-        console.warn(`Error invalidating cache for ${defaultCacheKey}`, error);
-      }
+      await safeDel(defaultCacheKey);
       res.status(200).json({ message: "Pedido pagado con éxito" });
     } catch (error) {
       next(error);
@@ -267,11 +259,7 @@ export class OrderController {
       });
       const defaultCacheKey = `orders:${oid}`;
       console.log(`✅ Invalidando caché: ${defaultCacheKey}`);
-      try {
-        await redisClient.del(defaultCacheKey);
-      } catch (error) {
-        console.warn(`Error invalidating cache for ${defaultCacheKey}`, error);
-      }
+      await safeDel(defaultCacheKey);
 
       const fullOrder = (await this.orderService.getOrderById(
         Number(oid),
@@ -292,20 +280,13 @@ export class OrderController {
         estado: fullOrder.estado,
       };
 
-      try {
-        await redisClient.publish(
+      await safePublish(
           "NEW_ORDER_TOPIC",
           JSON.stringify({
             action: "UPDATE_ORDER",
             order: kitchenPayload,
           }),
         );
-      } catch (redisError) {
-        console.warn(
-          "Fallo al publicar evento UPDATE_ORDER en Redis",
-          redisError,
-        );
-      }
 
       res.status(200).json({ message: "Pedido actualizado correctamente" });
     } catch (error) {

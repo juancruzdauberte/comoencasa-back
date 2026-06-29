@@ -6,7 +6,7 @@ import {
   IProductRepository,
 } from "../interfaces/product.interface";
 import { withTransaction } from "../utils/database.utils";
-import { redisClient, safeGet, safeSet, safeDel } from "../config/redis.config";
+import { safeGet, safeSet, safeDel, safeKeys } from "../config/redis.config";
 
 export class ProductService {
   constructor(
@@ -201,7 +201,7 @@ export class ProductService {
     } else {
       // Si no tenemos ID, invalidamos todas las categorías (más costoso pero seguro)
       // Ojo: SCAN es mejor para producción masiva, pero keys aquí es aceptable para escalas pequeñas
-      const categoryKeys = await redisClient.keys("products:category:*");
+             const categoryKeys = await safeKeys("products:category:*");
       keys.push(...categoryKeys);
     }
     await safeDel(keys);
